@@ -1,1 +1,0 @@
-// REMOVED - Admin functionality was removed from the inspector-focused mobile app
