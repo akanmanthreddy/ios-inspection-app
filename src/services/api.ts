@@ -5,40 +5,56 @@ import { ENV, isSupabaseConfigured } from '../config/env';
 // Environment detection for browser compatibility
 const isDevelopment = () => {
   try {
+    console.log('🔧 Debug - ENV.API_BASE_URL:', ENV.API_BASE_URL);
+    console.log('🔧 Debug - All ENV:', ENV);
+    
+    // Force production mode if API_BASE_URL is configured and not localhost
+    if (ENV.API_BASE_URL && !ENV.API_BASE_URL.includes('localhost')) {
+      console.log('🔧 Using PRODUCTION mode - API calls will go to:', ENV.API_BASE_URL);
+      return false;
+    }
+    
     // Check if we're in a development environment
-    return window.location.hostname === 'localhost' || 
-           window.location.hostname === '127.0.0.1' ||
-           window.location.hostname.includes('localhost');
+    const isDev = window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.includes('localhost');
+    
+    console.log('🔧 Using DEVELOPMENT mode - will use mock data. isDev:', isDev);
+    return isDev;
   } catch {
     // Fallback to development mode if window is not available
+    console.log('🔧 Fallback to development mode');
     return true;
   }
 };
 
-// API Response Types
+// API Response Types matching backend database structure
 export interface Community {
   id: string;
   name: string;
   status: 'active' | 'under-construction' | 'sold';
   location: string;
-  totalUnits: number;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
+  total_units: number;  // Backend uses snake_case
+  description?: string | null;
+  created_at: string;   // Backend uses snake_case
+  updated_at: string;   // Backend uses snake_case
+  created_by?: string | null;
+  planned_units?: number;  // Computed field from backend
+  active_units?: string;   // Count returned as string from backend
 }
 
 export interface Property {
   id: string;
-  communityId: string;
+  community_id: string;
   address: string;
-  propertyType: string;
+  property_type: string | null;
   status: 'active' | 'under-construction' | 'sold';
-  lastInspection: string | null;
-  nextInspection: string;
-  inspector: string;
-  issues: number;
-  createdAt: string;
-  updatedAt: string;
+  last_inspection: string | null;
+  next_inspection: string | null;
+  assigned_inspector: string | null;
+  issues_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Inspection {
@@ -99,15 +115,22 @@ class ApiClient {
 
     const url = `${ENV.API_BASE_URL}${endpoint}`;
     
+    // Prepare headers with potential auth token
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    // TODO: Add authorization header when authentication is implemented
+    // This will be handled by your backend, not directly with Supabase
+    
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
     try {
+      console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -115,9 +138,12 @@ class ApiClient {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ API Success: ${endpoint}`, data);
+      return data;
     } catch (error) {
-      console.error('API request failed, falling back to mock data:', error);
+      console.error(`❌ API request failed for ${endpoint}:`, error);
+      console.log('Falling back to mock data...');
       // Fallback to mock data if API fails
       return this.getMockResponse<T>(endpoint, options.method);
     }
@@ -135,10 +161,13 @@ class ApiClient {
           name: 'New Community',
           status: 'active' as const,
           location: 'Mock Location',
-          totalUnits: 0,
+          total_units: 0,
           description: 'Mock community',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: null,
+          planned_units: 0,
+          active_units: '0'
         };
         mockData.communities.push(newCommunity);
         return newCommunity as T;
@@ -150,16 +179,16 @@ class ApiClient {
       if (method === 'POST') {
         const newProperty = {
           id: `property-${Date.now()}`,
-          communityId: '1',
+          community_id: '1',
           address: 'Mock Address',
-          propertyType: 'Apartment',
+          property_type: 'Apartment',
           status: 'active' as const,
-          lastInspection: null,
-          nextInspection: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          inspector: 'Mock Inspector',
-          issues: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          last_inspection: null,
+          next_inspection: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          assigned_inspector: 'Mock Inspector',
+          issues_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         mockData.properties.push(newProperty);
         return newProperty as T;
@@ -193,30 +222,6 @@ class ApiClient {
 
   // Communities API
   async getCommunities(): Promise<Community[]> {
-    if (isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase
-          .from('communities')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        return (data || []).map(item => ({
-          id: item.id,
-          name: item.name,
-          status: item.status,
-          location: item.location,
-          totalUnits: item.total_units,
-          description: item.description,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at
-        }));
-      } catch (error) {
-        console.error('Supabase error, falling back to mock data:', error);
-        return mockData.communities;
-      }
-    }
     return this.request<Community[]>('/communities');
   }
 
@@ -225,47 +230,6 @@ class ApiClient {
   }
 
   async createCommunity(data: CreateCommunityData): Promise<Community> {
-    if (isSupabaseConfigured()) {
-      try {
-        const { data: result, error } = await supabase
-          .from('communities')
-          .insert({
-            name: data.name,
-            status: data.status,
-            location: data.location,
-            description: data.description,
-            total_units: 0,
-            created_by: 'current-user-id' // TODO: Get from auth context
-          })
-          .select()
-          .single();
-        
-        if (error) throw error;
-        
-        return {
-          id: result.id,
-          name: result.name,
-          status: result.status,
-          location: result.location,
-          totalUnits: result.total_units,
-          description: result.description,
-          createdAt: result.created_at,
-          updatedAt: result.updated_at
-        };
-      } catch (error) {
-        console.error('Supabase error, falling back to mock data:', error);
-        // Fallback to mock creation
-        const newCommunity: Community = {
-          id: Date.now().toString(),
-          ...data,
-          totalUnits: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        mockData.communities.push(newCommunity);
-        return newCommunity;
-      }
-    }
     return this.request<Community>('/communities', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -398,36 +362,42 @@ export const mockData = {
       name: 'Sunset Gardens',
       status: 'active' as const,
       location: '123 Main St, Anytown USA',
-      totalUnits: 24,
+      total_units: 24,
       description: 'Modern residential community',
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-15T10:00:00Z'
+      created_at: '2024-01-15T10:00:00Z',
+      updated_at: '2024-01-15T10:00:00Z',
+      created_by: null,
+      planned_units: 24,
+      active_units: '24'
     },
     {
       id: '2',
       name: 'Oakwood Heights',
       status: 'under-construction' as const,
       location: '456 Oak Ave, Anytown USA',
-      totalUnits: 36,
+      total_units: 36,
       description: 'Luxury apartments with amenities',
-      createdAt: '2024-02-01T10:00:00Z',
-      updatedAt: '2024-02-01T10:00:00Z'
+      created_at: '2024-02-01T10:00:00Z',
+      updated_at: '2024-02-01T10:00:00Z',
+      created_by: null,
+      planned_units: 36,
+      active_units: '36'
     }
   ] as Community[],
 
   properties: [
     {
       id: '1',
-      communityId: '1',
+      community_id: '1',
       address: '123 Main St, Unit A',
-      propertyType: 'Apartment',
+      property_type: 'Apartment',
       status: 'active' as const,
-      lastInspection: '2024-01-15',
-      nextInspection: '2024-04-15',
-      inspector: 'John Smith',
-      issues: 2,
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-15T10:00:00Z'
+      last_inspection: '2024-01-15',
+      next_inspection: '2024-04-15',
+      assigned_inspector: 'John Smith',
+      issues_count: 2,
+      created_at: '2024-01-15T10:00:00Z',
+      updated_at: '2024-01-15T10:00:00Z'
     }
   ] as Property[],
 

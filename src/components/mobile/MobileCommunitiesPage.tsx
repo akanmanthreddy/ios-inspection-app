@@ -3,6 +3,7 @@ import { ChevronLeft, Plus, MapPin, Calendar, Users } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { useCommunities } from '../../hooks/useCommunities';
 
 interface MobileCommunitiesPageProps {
   onBack: () => void;
@@ -13,58 +14,49 @@ export function MobileCommunitiesPage({
   onBack,
   onSelectCommunity
 }: MobileCommunitiesPageProps) {
-  // Mock data - in production this would come from props or hooks
-  const communities = [
-    {
-      id: '1',
-      name: 'Sunset Ridge',
-      location: 'North Austin',
-      status: 'Active' as const,
-      units: 45,
-      lastInspection: '2024-01-15',
-      totalInspections: 128
-    },
-    {
-      id: '2',
-      name: 'Oak Valley',
-      location: 'South Austin',
-      status: 'Under Construction' as const,
-      units: 32,
-      lastInspection: '2024-01-12',
-      totalInspections: 89
-    },
-    {
-      id: '3',
-      name: 'Pine Harbor',
-      location: 'West Austin',
-      status: 'Active' as const,
-      units: 28,
-      lastInspection: '2024-01-10',
-      totalInspections: 156
-    },
-    {
-      id: '4',
-      name: 'Maple Heights',
-      location: 'East Austin',
-      status: 'Sold' as const,
-      units: 18,
-      lastInspection: '2024-01-08',
-      totalInspections: 67
-    }
-  ];
+  // Use real API data via the hook
+  const { communities, loading, error } = useCommunities();
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
+    switch (status.toLowerCase()) {
+      case 'active':
         return 'bg-green-500/10 text-green-700 border-green-200';
-      case 'Under Construction':
+      case 'under-construction':
         return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
-      case 'Sold':
+      case 'sold':
         return 'bg-gray-500/10 text-gray-700 border-gray-200';
       default:
         return 'bg-gray-500/10 text-gray-700 border-gray-200';
     }
   };
+
+  const formatStatus = (status: string) => {
+    return status.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading communities...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading communities:</p>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -107,33 +99,26 @@ export function MobileCommunitiesPage({
                   </div>
                 </div>
                 <Badge className={getStatusColor(community.status)}>
-                  {community.status}
+                  {formatStatus(community.status)}
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border/30">
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
                     <Users className="w-4 h-4 text-muted-foreground mr-1" />
                   </div>
-                  <div className="text-lg font-medium text-primary">{community.units}</div>
-                  <div className="text-xs text-muted-foreground">Units</div>
+                  <div className="text-lg font-medium text-primary">{community.active_units || community.total_units || 0}</div>
+                  <div className="text-xs text-muted-foreground">Active Units</div>
                 </div>
                 
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Calendar className="w-4 h-4 text-muted-foreground mr-1" />
-                  </div>
-                  <div className="text-lg font-medium text-secondary">{community.totalInspections}</div>
-                  <div className="text-xs text-muted-foreground">Inspections</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">Last Inspection</div>
+                  <div className="text-xs text-muted-foreground mb-1">Created</div>
                   <div className="text-sm font-medium">
-                    {new Date(community.lastInspection).toLocaleDateString('en-US', {
+                    {new Date(community.created_at).toLocaleDateString('en-US', {
                       month: 'short',
-                      day: 'numeric'
+                      day: 'numeric',
+                      year: 'numeric'
                     })}
                   </div>
                 </div>

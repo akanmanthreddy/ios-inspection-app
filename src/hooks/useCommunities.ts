@@ -32,10 +32,9 @@ export function useCommunities(): UseCommunitiesReturn {
       setLoading(true);
       setError(null);
       
-      // Always use mock data for now (until backend is ready)
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCommunities(mockData.communities);
+      // Use the API client which handles fallback to mock data automatically
+      const data = await apiClient.getCommunities();
+      setCommunities(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch communities');
       console.error('Error fetching communities:', err);
@@ -48,15 +47,8 @@ export function useCommunities(): UseCommunitiesReturn {
     try {
       setError(null);
       
-      // Always use mock creation for now (until backend is ready)
-      const newCommunity: Community = {
-        id: Date.now().toString(),
-        ...data,
-        totalUnits: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      
+      // Use API client which handles fallback automatically
+      const newCommunity = await apiClient.createCommunity(data);
       setCommunities(prev => [...prev, newCommunity]);
       return newCommunity;
     } catch (err) {
@@ -70,14 +62,12 @@ export function useCommunities(): UseCommunitiesReturn {
     try {
       setError(null);
       
-      // Always use mock update for now (until backend is ready)
+      // Use API client which handles fallback automatically
+      const updated = await apiClient.updateCommunity(id, data);
       setCommunities(prev => prev.map(community => 
-        community.id === id 
-          ? { ...community, ...data, updatedAt: new Date().toISOString() }
-          : community
+        community.id === id ? updated : community
       ));
-      const updated = communities.find(c => c.id === id)!;
-      return { ...updated, ...data, updatedAt: new Date().toISOString() };
+      return updated;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update community';
       setError(errorMessage);
@@ -89,7 +79,8 @@ export function useCommunities(): UseCommunitiesReturn {
     try {
       setError(null);
       
-      // Always use mock deletion for now (until backend is ready)
+      // Use API client which handles fallback automatically
+      await apiClient.deleteCommunity(id);
       setCommunities(prev => prev.filter(community => community.id !== id));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete community';

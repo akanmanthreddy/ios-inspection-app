@@ -4,9 +4,11 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { useProperties } from '../../hooks/useProperties';
 
 interface MobilePropertiesPageProps {
   communityId: string;
+  communityName?: string;
   onBack: () => void;
   onSelectProperty: (propertyId: string, address: string) => void;
   onViewReports: (propertyId: string, address: string) => void;
@@ -15,6 +17,7 @@ interface MobilePropertiesPageProps {
 
 export function MobilePropertiesPage({
   communityId,
+  communityName = "Properties",
   onBack,
   onSelectProperty,
   onViewReports,
@@ -23,78 +26,24 @@ export function MobilePropertiesPage({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data - in production this would come from props or hooks
-  const communityName = 'Sunset Ridge';
-  const allProperties = [
-    {
-      id: '1',
-      address: '1234 Oak Street, Unit A',
-      unit: 'A-101',
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200,
-      lastInspection: '2024-01-15',
-      inspectionCount: 5,
-      status: 'Ready' as const
-    },
-    {
-      id: '2',
-      address: '1234 Oak Street, Unit B',
-      unit: 'A-102',
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1450,
-      lastInspection: '2024-01-12',
-      inspectionCount: 3,
-      status: 'Needs Inspection' as const
-    },
-    {
-      id: '3',
-      address: '1234 Oak Street, Unit C',
-      unit: 'A-103',
-      bedrooms: 1,
-      bathrooms: 1,
-      sqft: 850,
-      lastInspection: '2024-01-10',
-      inspectionCount: 7,
-      status: 'In Progress' as const
-    },
-    {
-      id: '4',
-      address: '1234 Oak Street, Unit D',
-      unit: 'A-104',
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200,
-      lastInspection: '2024-01-08',
-      inspectionCount: 2,
-      status: 'Ready' as const
-    },
-    {
-      id: '5',
-      address: '1234 Oak Street, Unit E',
-      unit: 'B-201',
-      bedrooms: 3,
-      bathrooms: 2.5,
-      sqft: 1650,
-      lastInspection: '2024-01-05',
-      inspectionCount: 4,
-      status: 'Ready' as const
-    },
-    {
-      id: '6',
-      address: '1234 Oak Street, Unit F',
-      unit: 'B-202',
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200,
-      lastInspection: '2024-01-03',
-      inspectionCount: 6,
-      status: 'Needs Inspection' as const
-    }
-  ];
+  // Use real API data via the hook
+  const { properties: allProperties, loading, error } = useProperties(communityId);
 
-  // Filter properties based on search query
+  // Helper functions to map backend data to display format
+  const getPropertyStatus = (property: any) => {
+    if (!property.last_inspection) return 'Needs Inspection';
+    if (property.next_inspection && new Date(property.next_inspection) < new Date()) return 'Needs Inspection';
+    return 'Ready';
+  };
+
+  const formatPropertyType = (type: string | null) => {
+    if (!type) return 'Unknown';
+    return type.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  // Filter properties based on search query - moved before early returns
   const filteredProperties = useMemo(() => {
     if (!searchQuery.trim()) {
       return allProperties;
@@ -102,11 +51,33 @@ export function MobilePropertiesPage({
     
     const query = searchQuery.toLowerCase().trim();
     return allProperties.filter(property =>
-      property.unit.toLowerCase().includes(query) ||
       property.address.toLowerCase().includes(query) ||
-      property.status.toLowerCase().includes(query)
+      formatPropertyType(property.property_type).toLowerCase().includes(query) ||
+      getPropertyStatus(property).toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, allProperties]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading properties...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading properties:</p>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -218,27 +189,33 @@ export function MobilePropertiesPage({
                 <div className="flex-1">
                   <div className="flex items-center mb-1">
                     <Home className="w-4 h-4 text-muted-foreground mr-2" />
-                    <span className="font-medium text-sm text-muted-foreground">Unit {property.unit}</span>
+                    <span className="font-medium text-sm text-muted-foreground">{formatPropertyType(property.property_type)}</span>
                   </div>
                   <h3 className="font-medium text-base mb-2">{property.address}</h3>
                   <div className="flex items-center text-sm text-muted-foreground mb-2">
-                    <span>{property.bedrooms} bed • {property.bathrooms} bath • {property.sqft} sqft</span>
+                    <span>Issues: {property.issues_count}</span>
                   </div>
                 </div>
-                <Badge className={getStatusColor(property.status)}>
-                  {property.status}
+                <Badge className={getStatusColor(getPropertyStatus(property))}>
+                  {getPropertyStatus(property)}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
-                  Last: {new Date(property.lastInspection).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric'
-                  })}
+                  Last: {property.last_inspection 
+                    ? new Date(property.last_inspection).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })
+                    : 'Never'
+                  }
                 </div>
-                <div>{property.inspectionCount} inspections</div>
+                <div>Created: {new Date(property.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                })}</div>
               </div>
 
               {/* Action Buttons */}

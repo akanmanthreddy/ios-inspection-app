@@ -33,16 +33,9 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
       setLoading(true);
       setError(null);
       
-      // Always use mock data for now (until backend is ready)
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Filter mock properties by community if specified
-      const filteredProperties = communityId 
-        ? mockData.properties.filter(p => p.communityId === communityId)
-        : mockData.properties;
-      
-      setProperties(filteredProperties);
+      // Use the API client which handles fallback to mock data automatically
+      const data = await apiClient.getProperties(communityId);
+      setProperties(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
@@ -55,18 +48,8 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
     try {
       setError(null);
       
-      // Always use mock creation for now (until backend is ready)
-      const newProperty: Property = {
-        id: Date.now().toString(),
-        ...data,
-        lastInspection: null,
-        nextInspection: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
-        inspector: 'Unassigned',
-        issues: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      
+      // Use API client which handles fallback automatically
+      const newProperty = await apiClient.createProperty(data);
       setProperties(prev => [...prev, newProperty]);
       return newProperty;
     } catch (err) {
@@ -80,18 +63,8 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
     try {
       setError(null);
       
-      // Always use mock bulk creation for now (until backend is ready)
-      const newProperties: Property[] = propertiesData.map(data => ({
-        id: (Date.now() + Math.random()).toString(),
-        ...data,
-        lastInspection: null,
-        nextInspection: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        inspector: 'Unassigned',
-        issues: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
-      
+      // Use API client which handles fallback automatically
+      const newProperties = await apiClient.createPropertiesBulk(communityId, propertiesData);
       setProperties(prev => [...prev, ...newProperties]);
       return newProperties;
     } catch (err) {
@@ -105,14 +78,12 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
     try {
       setError(null);
       
-      // Always use mock update for now (until backend is ready)
+      // Use API client which handles fallback automatically
+      const updated = await apiClient.updateProperty(id, data);
       setProperties(prev => prev.map(property => 
-        property.id === id 
-          ? { ...property, ...data, updatedAt: new Date().toISOString() }
-          : property
+        property.id === id ? updated : property
       ));
-      const updated = properties.find(p => p.id === id)!;
-      return { ...updated, ...data, updatedAt: new Date().toISOString() };
+      return updated;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update property';
       setError(errorMessage);
@@ -124,7 +95,8 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
     try {
       setError(null);
       
-      // Always use mock deletion for now (until backend is ready)
+      // Use API client which handles fallback automatically
+      await apiClient.deleteProperty(id);
       setProperties(prev => prev.filter(property => property.id !== id));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete property';
