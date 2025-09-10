@@ -87,7 +87,7 @@ export function MobileStartInspectionPage({
             </div>
             <div>
               <Label className="text-base font-medium">Select Community</Label>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-muted-foreground">
                 {isPreFilled ? "Pre-selected community" : "Choose the community to inspect"}
               </p>
             </div>
@@ -122,7 +122,7 @@ export function MobileStartInspectionPage({
             </div>
             <div>
               <Label className="text-base font-medium">Select Property</Label>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-muted-foreground">
                 {isPreFilled ? "Pre-selected property" : "Choose the specific property unit"}
               </p>
             </div>
@@ -162,7 +162,7 @@ export function MobileStartInspectionPage({
             </div>
             <div>
               <Label className="text-base font-medium">Select Template</Label>
-              <p className="text-sm text-muted">Choose inspection type and checklist</p>
+              <p className="text-sm text-muted-foreground">Choose inspection type and checklist</p>
             </div>
           </div>
           <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -174,7 +174,7 @@ export function MobileStartInspectionPage({
                 <SelectItem key={template.id} value={template.id}>
                   <div className="flex flex-col items-start">
                     <span className="font-medium">{template.name}</span>
-                    <span className="text-sm text-muted">{template.description}</span>
+                    <span className="text-sm text-muted-foreground">{template.description}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -189,7 +189,7 @@ export function MobileStartInspectionPage({
             <div className="space-y-2 text-sm">
               {selectedCommunity && (
                 <div className="flex justify-between">
-                  <span className="text-muted">Community:</span>
+                  <span className="text-muted-foreground">Community:</span>
                   <span className="font-medium">
                     {communities.find(c => c.id === selectedCommunity)?.name || 'Unknown'}
                   </span>
@@ -197,7 +197,7 @@ export function MobileStartInspectionPage({
               )}
               {selectedProperty && (
                 <div className="flex justify-between">
-                  <span className="text-muted">Property:</span>
+                  <span className="text-muted-foreground">Property:</span>
                   <span className="font-medium">
                     {properties.find(p => p.id === selectedProperty)?.address || 'Unknown'}
                   </span>
@@ -205,7 +205,7 @@ export function MobileStartInspectionPage({
               )}
               {selectedTemplate && (
                 <div className="flex justify-between">
-                  <span className="text-muted">Template:</span>
+                  <span className="text-muted-foreground">Template:</span>
                   <span className="font-medium">
                     {inspectionTemplates.find(t => t.id === selectedTemplate)?.name || 'Unknown'}
                   </span>

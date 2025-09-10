@@ -1,5 +1,5 @@
 // API Service Layer for Property Inspection App
-import { supabase } from './supabase';
+// import { supabase } from './supabase';
 import { ENV, isSupabaseConfigured } from '../config/env';
 
 // Environment detection for browser compatibility
@@ -97,7 +97,7 @@ class ApiClient {
       return this.getMockResponse<T>(endpoint, options.method);
     }
 
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${ENV.API_BASE_URL}${endpoint}`;
     
     const config: RequestInit = {
       headers: {
@@ -365,7 +365,7 @@ class ApiClient {
     formData.append('file', file);
     formData.append('type', type);
 
-    const response = await fetch(`${API_BASE_URL}/upload`, {
+    const response = await fetch(`${ENV.API_BASE_URL}/upload`, {
       method: 'POST',
       body: formData,
     });

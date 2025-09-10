@@ -25,7 +25,7 @@ export function MobileBottomNav({
           className={`flex-1 flex flex-col items-center justify-center py-3 px-4 min-h-[60px] transition-colors ${
             (currentPage === 'communities' || currentPage === 'properties') 
               ? 'text-[#1b365d] bg-[#1b365d]/5' 
-              : 'text-gray-600 hover:text-gray-800'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Building2 className="w-6 h-6 mb-1" />
@@ -37,7 +37,7 @@ export function MobileBottomNav({
           className={`flex-1 flex flex-col items-center justify-center py-3 px-4 min-h-[60px] transition-colors ${
             (currentPage === 'inspections' || currentPage === 'inspections-overview') 
               ? 'text-[#1b365d] bg-[#1b365d]/5' 
-              : 'text-gray-600 hover:text-gray-800'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <FileText className="w-6 h-6 mb-1" />

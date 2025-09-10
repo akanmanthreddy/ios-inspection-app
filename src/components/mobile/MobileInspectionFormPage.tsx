@@ -240,7 +240,7 @@ export function MobileInspectionFormPage({
             <h3 className="font-medium text-foreground">
               {inspectionSections.find(s => s.id === currentStickySection)?.title}
             </h3>
-            <div className="text-xs text-muted px-2 py-1 bg-muted/20 rounded-full">
+            <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/20 rounded-full">
               {(() => {
                 const section = inspectionSections.find(s => s.id === currentStickySection);
                 if (section) {
@@ -284,7 +284,7 @@ export function MobileInspectionFormPage({
                                 ? 'bg-green-100 text-green-800' 
                                 : completionStatus.completed > 0
                                   ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-600'
+                                  : 'bg-gray-100 text-muted-foreground'
                             }`}>
                               {completionStatus.completed}/{completionStatus.total}
                             </div>
@@ -349,7 +349,7 @@ export function MobileInspectionFormPage({
                                     </div>
                                     
                                     {/* Labels */}
-                                    <div className="flex space-x-3 text-xs text-gray-600">
+                                    <div className="flex space-x-3 text-xs text-muted-foreground">
                                       <span className="w-12 text-center">Good</span>
                                       <span className="w-12 text-center">Fair</span>
                                       <span className="w-12 text-center">Repair</span>
@@ -403,7 +403,7 @@ export function MobileInspectionFormPage({
                               {/* Show existing comment preview when collapsed */}
                               {!expandedNotes[item.id] && formData[item.id]?.comment && (
                                 <div className="mt-3 pt-3 border-t border-border/30">
-                                  <div className="text-xs text-muted bg-muted/20 p-2 rounded">
+                                  <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
                                     {formData[item.id].comment.length > 50 
                                       ? `${formData[item.id].comment.substring(0, 50)}...` 
                                       : formData[item.id].comment

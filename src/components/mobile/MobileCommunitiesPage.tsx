@@ -101,7 +101,7 @@ export function MobileCommunitiesPage({
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-medium text-lg mb-1">{community.name}</h3>
-                  <div className="flex items-center text-muted text-sm mb-2">
+                  <div className="flex items-center text-muted-foreground text-sm mb-2">
                     <MapPin className="w-4 h-4 mr-1" />
                     {community.location}
                   </div>
@@ -114,22 +114,22 @@ export function MobileCommunitiesPage({
               <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border/30">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Users className="w-4 h-4 text-muted mr-1" />
+                    <Users className="w-4 h-4 text-muted-foreground mr-1" />
                   </div>
                   <div className="text-lg font-medium text-primary">{community.units}</div>
-                  <div className="text-xs text-muted">Units</div>
+                  <div className="text-xs text-muted-foreground">Units</div>
                 </div>
                 
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Calendar className="w-4 h-4 text-muted mr-1" />
+                    <Calendar className="w-4 h-4 text-muted-foreground mr-1" />
                   </div>
                   <div className="text-lg font-medium text-secondary">{community.totalInspections}</div>
-                  <div className="text-xs text-muted">Inspections</div>
+                  <div className="text-xs text-muted-foreground">Inspections</div>
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-xs text-muted mb-1">Last Inspection</div>
+                  <div className="text-xs text-muted-foreground mb-1">Last Inspection</div>
                   <div className="text-sm font-medium">
                     {new Date(community.lastInspection).toLocaleDateString('en-US', {
                       month: 'short',

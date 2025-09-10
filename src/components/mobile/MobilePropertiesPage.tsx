@@ -121,7 +121,7 @@ export function MobilePropertiesPage({
       case 'In Progress':
         return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
       default:
-        return 'bg-gray-500/10 text-gray-700 border-gray-200';
+        return 'bg-gray-500/10 text-muted-foreground border-gray-200';
     }
   };
 
@@ -168,7 +168,7 @@ export function MobilePropertiesPage({
       {/* Search Section */}
       <div className="px-6 py-4 bg-background border-b border-border/30">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search by unit number, address, or status..."
@@ -188,7 +188,7 @@ export function MobilePropertiesPage({
           )}
         </div>
         {searchQuery && (
-          <p className="text-sm text-muted mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             {filteredProperties.length} of {allProperties.length} units match "{searchQuery}"
           </p>
         )}
@@ -198,9 +198,9 @@ export function MobilePropertiesPage({
       <div className="px-6 py-6">
         {filteredProperties.length === 0 ? (
           <div className="text-center py-12">
-            <Search className="w-12 h-12 text-muted mx-auto mb-4" />
+            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-medium text-foreground mb-2">No units found</h3>
-            <p className="text-sm text-muted mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Try adjusting your search terms or browse all units.
             </p>
             <Button onClick={clearSearch} variant="outline" size="sm">
@@ -217,11 +217,11 @@ export function MobilePropertiesPage({
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center mb-1">
-                    <Home className="w-4 h-4 text-muted mr-2" />
-                    <span className="font-medium text-sm text-muted">Unit {property.unit}</span>
+                    <Home className="w-4 h-4 text-muted-foreground mr-2" />
+                    <span className="font-medium text-sm text-muted-foreground">Unit {property.unit}</span>
                   </div>
                   <h3 className="font-medium text-base mb-2">{property.address}</h3>
-                  <div className="flex items-center text-sm text-muted mb-2">
+                  <div className="flex items-center text-sm text-muted-foreground mb-2">
                     <span>{property.bedrooms} bed • {property.bathrooms} bath • {property.sqft} sqft</span>
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export function MobilePropertiesPage({
                 </Badge>
               </div>
 
-              <div className="flex items-center justify-between text-sm text-muted mb-4">
+              <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
                   Last: {new Date(property.lastInspection).toLocaleDateString('en-US', {

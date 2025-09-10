@@ -38,7 +38,7 @@ export function MobileCompletionOptionsPage({
       {/* Options */}
       <div className="px-6 py-8">
         <div className="space-y-4">
-          <p className="text-center text-muted mb-6">
+          <p className="text-center text-muted-foregroundmb-6">
             How would you like to complete this inspection?
           </p>
 

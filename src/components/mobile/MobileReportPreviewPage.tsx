@@ -67,7 +67,7 @@ export function MobileReportPreviewPage({
       case 'good': return 'text-green-600 bg-green-50';
       case 'fair': return 'text-cyan-600 bg-cyan-50';
       case 'repair': return 'text-orange-600 bg-orange-50';
-      default: return 'text-gray-600 bg-gray-50';
+      default: return 'text-muted-foreground bg-gray-50';
     }
   };
 
