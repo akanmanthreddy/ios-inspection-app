@@ -1,0 +1,1 @@
+// REMOVED - Advanced analytics not used in inspector-focused app
