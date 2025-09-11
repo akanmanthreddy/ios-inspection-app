@@ -189,13 +189,25 @@ export function MobileInspectionDetailPage({
                         {issue.photos.map((photo, photoIndex) => (
                           <div 
                             key={photoIndex} 
-                            className="flex-shrink-0 w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-300 transition-colors"
+                            className="flex-shrink-0 w-16 h-16 rounded-lg cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border border-slate-200"
                             onClick={() => {
                               // TODO: Implement photo viewer
                               console.log('View photo:', photo);
                             }}
                           >
-                            <Camera className="w-6 h-6 text-slate-500" />
+                            <img 
+                              src={photo} 
+                              alt={`Issue photo ${photoIndex + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to camera icon if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                const container = target.parentElement;
+                                if (container) {
+                                  container.innerHTML = '<div class="w-full h-full bg-slate-200 flex items-center justify-center"><svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>';
+                                }
+                              }}
+                            />
                           </div>
                         ))}
                       </div>
@@ -306,13 +318,25 @@ export function MobileInspectionDetailPage({
                                     {response.photos.map((photo, photoIndex) => (
                                       <div 
                                         key={photoIndex} 
-                                        className="flex-shrink-0 w-12 h-12 bg-slate-200 rounded flex items-center justify-center cursor-pointer hover:bg-slate-300 transition-colors"
+                                        className="flex-shrink-0 w-12 h-12 rounded cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border border-slate-200"
                                         onClick={() => {
                                           // TODO: Implement photo viewer
                                           console.log('View photo:', photo);
                                         }}
                                       >
-                                        <Camera className="w-4 h-4 text-slate-500" />
+                                        <img 
+                                          src={photo} 
+                                          alt={`Item photo ${photoIndex + 1}`}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            // Fallback to camera icon if image fails to load
+                                            const target = e.target as HTMLImageElement;
+                                            const container = target.parentElement;
+                                            if (container) {
+                                              container.innerHTML = '<div class="w-full h-full bg-slate-200 flex items-center justify-center"><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>';
+                                            }
+                                          }}
+                                        />
                                       </div>
                                     ))}
                                   </div>

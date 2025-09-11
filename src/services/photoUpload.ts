@@ -1,5 +1,6 @@
 import { PhotoData } from '../types';
 import { Capacitor } from '@capacitor/core';
+import { ENV } from '../config/env';
 
 export interface PhotoUploadOptions {
   inspectionId: string;
@@ -23,7 +24,7 @@ export interface PhotoUploadResult {
 }
 
 export class PhotoUploadService {
-  private static readonly UPLOAD_ENDPOINT = '/api/photos/upload';
+  private static readonly UPLOAD_ENDPOINT = '/photos/upload'; // Will be appended to API base URL
   private static readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   private static readonly SUPPORTED_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -48,7 +49,10 @@ export class PhotoUploadService {
       formData.append('quality', (options.quality || 80).toString());
 
       // Upload to backend API
-      const response = await fetch(this.UPLOAD_ENDPOINT, {
+      const uploadUrl = `${ENV.API_BASE_URL}${this.UPLOAD_ENDPOINT}`;
+      console.log('📤 Uploading to:', uploadUrl);
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData
       });
@@ -182,7 +186,10 @@ export class PhotoUploadService {
     try {
       console.log('🗑️ Deleting photo via backend:', photoId);
       
-      const response = await fetch(`/api/photos/${photoId}`, {
+      const deleteUrl = `${ENV.API_BASE_URL}/photos/${photoId}`;
+      console.log('🗑️ Deleting from:', deleteUrl);
+      
+      const response = await fetch(deleteUrl, {
         method: 'DELETE'
       });
 
@@ -203,7 +210,8 @@ export class PhotoUploadService {
    */
   static async listInspectionPhotos(inspectionId: string): Promise<string[]> {
     try {
-      const response = await fetch(`/api/inspections/${inspectionId}/photos`);
+      const listUrl = `${ENV.API_BASE_URL}/inspections/${inspectionId}/photos`;
+      const response = await fetch(listUrl);
       
       if (!response.ok) {
         throw new Error(`Failed to list photos: ${response.status} ${response.statusText}`);
@@ -237,7 +245,8 @@ export class PhotoUploadService {
    */
   static async checkStorageAvailability(): Promise<boolean> {
     try {
-      const response = await fetch('/api/photos/health');
+      const healthUrl = `${ENV.API_BASE_URL}/photos/health`;
+      const response = await fetch(healthUrl);
       return response.ok;
     } catch (error) {
       console.error('❌ Backend photo upload not available:', error);
