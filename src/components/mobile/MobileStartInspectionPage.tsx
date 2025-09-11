@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Building2, Home, FileText } from 'lucide-react';
+import { ArrowLeft, Building2, Home, FileText, Loader2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
+import { useTemplates } from '../../hooks/useTemplates';
 
 interface MobileStartInspectionPageProps {
   onBack: () => void;
-  onStartInspection: (communityId: string, propertyId: string, template: string) => void;
+  onStartInspection: (communityId: string, propertyId: string, templateId: string | number) => void;
   communities: Array<{ id: string; name: string; }>;
   properties: Array<{ id: string; address: string; unitNumber?: string; }>;
   onCommunityChange: (communityId: string) => void;
@@ -26,19 +27,21 @@ export function MobileStartInspectionPage({
 }: MobileStartInspectionPageProps) {
   const [selectedCommunity, setSelectedCommunity] = useState<string>(preSelectedCommunity || '');
   const [selectedProperty, setSelectedProperty] = useState<string>(preSelectedProperty?.id || '');
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string | number | null>(null);
+
+  // Use live templates API
+  const { templates, loading: templatesLoading, error: templatesError } = useTemplates();
 
   // Determine if we're in pre-filled mode (coming from a specific property)
   const isPreFilled = preSelectedCommunity && preSelectedProperty;
 
-  // Mock templates - in production this would come from props or hooks
-  const inspectionTemplates = [
-    { id: 'routine', name: 'Routine Inspection', description: 'Standard property inspection checklist' },
-    { id: 'move-in', name: 'Move-in Inspection', description: 'Pre-tenancy condition assessment' },
-    { id: 'move-out', name: 'Move-out Inspection', description: 'Post-tenancy condition assessment' },
-    { id: 'maintenance', name: 'Maintenance Inspection', description: 'Targeted maintenance review' },
-    { id: 'annual', name: 'Annual Inspection', description: 'Comprehensive yearly review' }
-  ];
+  // Set default template selection
+  useEffect(() => {
+    if (templates.length > 0 && selectedTemplate === null) {
+      const defaultTemplate = templates.find(t => t.is_default) || templates[0];
+      setSelectedTemplate(defaultTemplate.id);
+    }
+  }, [templates, selectedTemplate]);
 
   const handleCommunityChange = (communityId: string) => {
     setSelectedCommunity(communityId);
@@ -46,10 +49,10 @@ export function MobileStartInspectionPage({
     onCommunityChange(communityId);
   };
 
-  const isFormValid = selectedCommunity && selectedProperty && selectedTemplate;
+  const isFormValid = selectedCommunity && selectedProperty && selectedTemplate !== null;
 
   const handleStartInspection = () => {
-    if (isFormValid) {
+    if (isFormValid && selectedTemplate !== null) {
       onStartInspection(selectedCommunity, selectedProperty, selectedTemplate);
     }
   };
@@ -165,25 +168,37 @@ export function MobileStartInspectionPage({
               <p className="text-sm text-muted-foreground">Choose inspection type and checklist</p>
             </div>
           </div>
-          <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose inspection template..." />
-            </SelectTrigger>
-            <SelectContent>
-              {inspectionTemplates.map((template) => (
-                <SelectItem key={template.id} value={template.id}>
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{template.name}</span>
-                    <span className="text-sm text-muted-foreground">{template.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {templatesLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 animate-spin text-primary mr-2" />
+              <span className="text-sm text-muted-foreground">Loading templates...</span>
+            </div>
+          ) : templatesError ? (
+            <div className="text-center py-4">
+              <p className="text-destructive text-sm mb-1">Failed to load templates</p>
+              <p className="text-muted-foreground text-xs">{templatesError}</p>
+            </div>
+          ) : (
+            <Select 
+              value={selectedTemplate?.toString() || ''} 
+              onValueChange={setSelectedTemplate}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose inspection template..." />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id.toString()}>
+                    {template.name}{template.is_default ? ' (Default)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </Card>
 
         {/* Selected Summary */}
-        {(selectedCommunity || selectedProperty || selectedTemplate) && (
+        {(selectedCommunity || selectedProperty || selectedTemplate !== null) && (
           <Card className="p-6 bg-muted/10 border-muted/20">
             <h3 className="font-medium mb-3">Inspection Summary</h3>
             <div className="space-y-2 text-sm">
@@ -203,11 +218,11 @@ export function MobileStartInspectionPage({
                   </span>
                 </div>
               )}
-              {selectedTemplate && (
+              {selectedTemplate !== null && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Template:</span>
                   <span className="font-medium">
-                    {inspectionTemplates.find(t => t.id === selectedTemplate)?.name || 'Unknown'}
+                    {templates.find(t => t.id.toString() === selectedTemplate.toString())?.name || 'Unknown'}
                   </span>
                 </div>
               )}

@@ -79,6 +79,66 @@ export interface InspectionIssue {
   photos?: string[];
 }
 
+// Template API Types matching backend database structure
+export interface TemplateItem {
+  id: number;
+  section_id: number;
+  name: string;
+  type: 'text' | 'select' | 'checkbox' | 'number';
+  required: boolean;
+  order_index: number;
+  options: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateSection {
+  id: number;
+  template_id: number;
+  name: string;
+  order_index: number;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  items: TemplateItem[];
+}
+
+export interface Template {
+  id: number;
+  name: string;
+  description: string | null;
+  type: 'cofo-property' | 'community-level' | 'construction-progress' | 'move-in-move-out' | 'pre-move-out' | 'sale-ready' | 'sparkle-final';
+  is_default: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  sections: TemplateSection[];
+}
+
+export interface CreateTemplateItemData {
+  name: string;
+  type: 'text' | 'select' | 'checkbox' | 'number';
+  required: boolean;
+  order_index: number;
+  options?: string[] | null;
+}
+
+export interface CreateTemplateSectionData {
+  name: string;
+  order_index: number;
+  description?: string | null;
+  items: CreateTemplateItemData[];
+}
+
+export interface CreateTemplateData {
+  name: string;
+  description?: string | null;
+  type?: 'cofo-property' | 'community-level' | 'construction-progress' | 'move-in-move-out' | 'pre-move-out' | 'sale-ready' | 'sparkle-final';
+  isDefault?: boolean;
+  created_by?: string | null;
+  sections: CreateTemplateSectionData[];
+}
+
 export interface CreateCommunityData {
   name: string;
   status: 'active' | 'under-construction' | 'sold';
@@ -216,6 +276,25 @@ class ApiClient {
       return mockData.inspections as T;
     }
 
+    if (endpoint.includes('/templates')) {
+      if (method === 'POST') {
+        const newTemplate = {
+          id: Date.now(),
+          name: 'New Template',
+          description: 'Mock template',
+          type: 'cofo-property' as const,
+          is_default: false,
+          created_by: 'Mock User',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          sections: []
+        };
+        mockData.templates.push(newTemplate);
+        return newTemplate as T;
+      }
+      return mockData.templates as T;
+    }
+
     // Default empty response
     return [] as T;
   }
@@ -323,6 +402,77 @@ class ApiClient {
     });
   }
 
+  // Templates API
+  async getTemplates(): Promise<Template[]> {
+    return this.request<Template[]>('/templates');
+  }
+
+  async getTemplate(id: string | number): Promise<Template> {
+    return this.request<Template>(`/templates/${id}`);
+  }
+
+  async createTemplate(data: CreateTemplateData): Promise<Template> {
+    return this.request<Template>('/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTemplate(id: string | number, data: Partial<CreateTemplateData>): Promise<Template> {
+    return this.request<Template>(`/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTemplate(id: string | number): Promise<void> {
+    return this.request<void>(`/templates/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Template Sections API
+  async createTemplateSection(templateId: number, data: Omit<CreateTemplateSectionData, 'items'>): Promise<TemplateSection> {
+    return this.request<TemplateSection>(`/templates/${templateId}/sections`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTemplateSection(id: number, data: Partial<Omit<CreateTemplateSectionData, 'items'>>): Promise<TemplateSection> {
+    return this.request<TemplateSection>(`/templates/sections/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTemplateSection(id: number): Promise<void> {
+    return this.request<void>(`/templates/sections/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Template Items API
+  async createTemplateItem(sectionId: number, data: CreateTemplateItemData): Promise<TemplateItem> {
+    return this.request<TemplateItem>(`/templates/sections/${sectionId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTemplateItem(id: number, data: Partial<CreateTemplateItemData>): Promise<TemplateItem> {
+    return this.request<TemplateItem>(`/templates/items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTemplateItem(id: number): Promise<void> {
+    return this.request<void>(`/templates/items/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // File Upload API
   async uploadFile(file: File, type: 'csv' | 'image' | 'document'): Promise<{ url: string; filename: string }> {
     const formData = new FormData();
@@ -422,5 +572,109 @@ export const mockData = {
       createdAt: '2024-01-15T10:00:00Z',
       updatedAt: '2024-01-15T10:00:00Z'
     }
-  ] as Inspection[]
+  ] as Inspection[],
+
+  templates: [
+    {
+      id: 1,
+      name: 'Standard Move-In Inspection',
+      description: 'Default template for move-in inspections with comprehensive room-by-room checklist',
+      type: 'cofo-property' as const,
+      is_default: true,
+      created_by: 'admin',
+      created_at: '2024-01-01T10:00:00Z',
+      updated_at: '2024-01-01T10:00:00Z',
+      sections: [
+        {
+          id: 1,
+          template_id: 1,
+          name: 'Kitchen',
+          order_index: 1,
+          description: 'Kitchen appliances and fixtures inspection',
+          created_at: '2024-01-01T10:00:00Z',
+          updated_at: '2024-01-01T10:00:00Z',
+          items: [
+            {
+              id: 1,
+              section_id: 1,
+              name: 'Sink Condition',
+              type: 'select' as const,
+              required: true,
+              order_index: 1,
+              options: ['excellent', 'good', 'fair', 'poor'],
+              created_at: '2024-01-01T10:00:00Z',
+              updated_at: '2024-01-01T10:00:00Z'
+            },
+            {
+              id: 2,
+              section_id: 1,
+              name: 'Faucet Operation',
+              type: 'select' as const,
+              required: true,
+              order_index: 2,
+              options: ['working', 'minor_issues', 'needs_repair'],
+              created_at: '2024-01-01T10:00:00Z',
+              updated_at: '2024-01-01T10:00:00Z'
+            }
+          ]
+        },
+        {
+          id: 2,
+          template_id: 1,
+          name: 'Living Room',
+          order_index: 2,
+          description: 'Living area and common spaces',
+          created_at: '2024-01-01T10:00:00Z',
+          updated_at: '2024-01-01T10:00:00Z',
+          items: [
+            {
+              id: 3,
+              section_id: 2,
+              name: 'Flooring Condition',
+              type: 'select' as const,
+              required: true,
+              order_index: 1,
+              options: ['excellent', 'good', 'fair', 'poor'],
+              created_at: '2024-01-01T10:00:00Z',
+              updated_at: '2024-01-01T10:00:00Z'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Premium Template',
+      description: 'Enhanced template with detailed inspection criteria and custom branding options',
+      type: 'sale-ready' as const,
+      is_default: false,
+      created_by: 'property_manager',
+      created_at: '2024-01-02T10:00:00Z',
+      updated_at: '2024-01-02T10:00:00Z',
+      sections: [
+        {
+          id: 3,
+          template_id: 2,
+          name: 'Bathroom',
+          order_index: 1,
+          description: 'Bathroom fixtures and plumbing',
+          created_at: '2024-01-02T10:00:00Z',
+          updated_at: '2024-01-02T10:00:00Z',
+          items: [
+            {
+              id: 4,
+              section_id: 3,
+              name: 'Toilet Condition',
+              type: 'select' as const,
+              required: true,
+              order_index: 1,
+              options: ['excellent', 'good', 'needs_cleaning', 'needs_repair'],
+              created_at: '2024-01-02T10:00:00Z',
+              updated_at: '2024-01-02T10:00:00Z'
+            }
+          ]
+        }
+      ]
+    }
+  ] as Template[]
 };

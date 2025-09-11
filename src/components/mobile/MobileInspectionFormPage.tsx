@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronDown, Check, Star, Wrench, Camera, NotebookPen } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Progress } from '../ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { useTemplate } from '../../hooks/useTemplates';
 
 interface MobileInspectionFormPageProps {
   propertyId: string;
   propertyAddress: string;
   inspectionId: string;
+  templateId?: string | number; // Optional for backward compatibility
   onBack: () => void;
   onComplete: (data: any) => void;
 }
@@ -18,6 +20,7 @@ export function MobileInspectionFormPage({
   propertyId,
   propertyAddress,
   inspectionId,
+  templateId,
   onBack,
   onComplete
 }: MobileInspectionFormPageProps) {
@@ -27,8 +30,50 @@ export function MobileInspectionFormPage({
   const [currentStickySection, setCurrentStickySection] = useState<string>('');
   const sectionRefs = useRef<Record<string, HTMLElement>>({});
 
-  // Mock inspection template data - now structured as sections (areas) with items
-  const inspectionSections = [
+  // Fetch template data if templateId is provided
+  const shouldFetchTemplate = templateId !== undefined && templateId !== null;
+  
+  // Handle both UUID strings and number IDs - if it's a UUID string, don't try to parse as int
+  const templateIdForHook = shouldFetchTemplate ? (
+    typeof templateId === 'string' && templateId.includes('-') 
+      ? templateId // Keep UUID strings as-is
+      : (typeof templateId === 'string' ? parseInt(templateId) : templateId)
+  ) : 0;
+  
+  const { template, loading: templateLoading, error: templateError } = useTemplate(templateIdForHook);
+
+  // Debug logging for template data
+  useEffect(() => {
+    if (shouldFetchTemplate) {
+      console.log('Inspection Form - Template ID:', templateId);
+      console.log('Inspection Form - Template Loading:', templateLoading);
+      console.log('Inspection Form - Template Data:', template);
+      console.log('Inspection Form - Template Error:', templateError);
+    }
+  }, [templateId, templateLoading, template, templateError, shouldFetchTemplate]);
+
+  // Function to convert template data to inspection sections format
+  const convertTemplateToInspectionSections = (templateData: any) => {
+    if (!templateData || !templateData.sections) {
+      return [];
+    }
+
+    return templateData.sections.map((section: any) => ({
+      id: `section-${section.id}`,
+      title: section.name,
+      items: section.items.map((item: any) => ({
+        id: `item-${item.id}`,
+        label: item.name,
+        // Force all items to use good-fair-repair rating system regardless of backend type
+        type: 'good-fair-repair' as const,
+        // Store original item data for backend submission
+        originalItem: item
+      }))
+    }));
+  };
+
+  // Mock inspection template data - used as fallback when no template provided or while loading
+  const mockInspectionSections = [
     {
       id: 'kitchen-appliances',
       title: 'Kitchen - Appliances',
@@ -109,6 +154,19 @@ export function MobileInspectionFormPage({
       ]
     }
   ];
+
+  // Choose between live template data and mock data
+  const inspectionSections = useMemo(() => {
+    // Use live template data if available and loaded
+    if (shouldFetchTemplate && template && !templateLoading && !templateError) {
+      console.log('Using live template data:', template.name);
+      return convertTemplateToInspectionSections(template);
+    }
+    
+    // Fallback to mock data
+    console.log('Using mock inspection data');
+    return mockInspectionSections;
+  }, [shouldFetchTemplate, template, templateLoading, templateError, mockInspectionSections]);
 
   const totalItems = inspectionSections.reduce((total, section) => 
     total + section.items.length, 0

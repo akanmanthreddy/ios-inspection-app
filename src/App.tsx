@@ -31,6 +31,7 @@ function AppContent() {
   const [selectedCommunityForInspection, setSelectedCommunityForInspection] = useState<string | null>(null);
   const [inspectionFormData, setInspectionFormData] = useState<any>(null);
   const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('default');
+  const [selectedInspectionTemplate, setSelectedInspectionTemplate] = useState<string | number | null>(null);
   const [navigationStack, setNavigationStack] = useState<AppState[]>(['landing']);
 
   // API Integration Hooks - always call hooks (rules of hooks)
@@ -176,7 +177,7 @@ function AppContent() {
     setSelectedCommunityForInspection(communityId);
   };
 
-  const handleCreateInspectionFromStartPage = async (communityId: string, propertyId: string, template: string) => {
+  const handleCreateInspectionFromStartPage = async (communityId: string, propertyId: string, templateId: string | number) => {
     try {
       // Find the property details
       const property = properties.find(p => p.id === propertyId);
@@ -184,12 +185,15 @@ function AppContent() {
         throw new Error('Property not found');
       }
 
+      // Store the selected template ID for the inspection form
+      setSelectedInspectionTemplate(templateId);
+      
       const inspectionData: CreateInspectionData = {
         propertyId,
         inspectorName: 'Current User',
         scheduledDate: new Date().toISOString().split('T')[0],
-        type: template as any,
-        notes: `Inspection started for ${property.address} using ${template} template`
+        type: 'routine', // Use generic type, actual template data comes from templateId
+        notes: `Inspection started for ${property.address} using template ID: ${templateId}`
       };
       
       const newInspection = await createInspection(inspectionData);
@@ -292,6 +296,7 @@ function AppContent() {
             propertyId={selectedProperty.id}
             propertyAddress={selectedProperty.address}
             inspectionId={currentInspectionId}
+            templateId={selectedInspectionTemplate || undefined}
             onBack={navigateBack}
             onComplete={handleInspectionFormComplete}
           />
@@ -350,8 +355,8 @@ function AppContent() {
             communities={communities || []}
             properties={selectedCommunityForInspection ? (properties || []) : []}
             onCommunityChange={handleCommunityChangeForInspection}
-            preSelectedCommunity={selectedCommunityForInspection || undefined}
-            preSelectedProperty={selectedProperty || undefined}
+            preSelectedCommunity={selectedCommunityForInspection || ''}
+            preSelectedProperty={selectedProperty || { id: '', address: '' }}
           />
         );
 

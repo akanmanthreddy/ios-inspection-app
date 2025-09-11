@@ -1,20 +1,15 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { ChevronLeft, FileText } from 'lucide-react';
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  isDefault: boolean;
-}
+import { ChevronLeft, FileText, Loader2 } from 'lucide-react';
+import { useTemplates } from '../../hooks/useTemplates';
+import { Template } from '../../services/api';
 
 interface MobileReportTemplateSelectionPageProps {
   propertyAddress: string;
   onBack: () => void;
-  onSelectTemplate: (templateId: string) => void;
+  onSelectTemplate: (templateId: number) => void;
 }
 
 export function MobileReportTemplateSelectionPage({
@@ -22,26 +17,24 @@ export function MobileReportTemplateSelectionPage({
   onBack,
   onSelectTemplate
 }: MobileReportTemplateSelectionPageProps) {
-  // Mock templates - in real app these would come from API
-  const availableTemplates: Template[] = [
-    {
-      id: 'default',
-      name: 'Default Template',
-      description: 'Standard inspection report format with all essential sections',
-      isDefault: true
-    },
-    {
-      id: 'property-assigned',
-      name: 'Premium Template',
-      description: 'Enhanced template with additional formatting and branding options',
-      isDefault: false
-    }
-  ];
+  // Use live templates API
+  const { templates, loading, error } = useTemplates();
+  
+  // Set default selection to the first template that is marked as default, or the first template
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
 
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('default');
+  // Update selection when templates load
+  React.useEffect(() => {
+    if (templates.length > 0 && selectedTemplate === null) {
+      const defaultTemplate = templates.find(t => t.is_default) || templates[0];
+      setSelectedTemplate(defaultTemplate.id);
+    }
+  }, [templates, selectedTemplate]);
 
   const handleContinue = () => {
-    onSelectTemplate(selectedTemplate);
+    if (selectedTemplate !== null) {
+      onSelectTemplate(selectedTemplate);
+    }
   };
 
   return (
@@ -72,42 +65,66 @@ export function MobileReportTemplateSelectionPage({
           </p>
         </div>
 
-        <RadioGroup value={selectedTemplate} onValueChange={setSelectedTemplate}>
-          <div className="space-y-4">
-            {availableTemplates.map((template) => (
-              <Card key={template.id} className="border border-border/50">
-                <label
-                  htmlFor={template.id}
-                  className="flex items-center p-4 cursor-pointer hover:bg-muted/10 transition-colors"
-                >
-                  <RadioGroupItem
-                    value={template.id}
-                    id={template.id}
-                    className="mr-4"
-                  />
-                  <div className="flex items-center flex-1">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mr-4">
-                      <FileText className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <h3 className="font-medium text-base">{template.name}</h3>
-                        {template.isDefault && (
-                          <span className="ml-2 text-xs bg-muted px-2 py-1 rounded-full">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {template.description}
-                      </p>
-                    </div>
-                  </div>
-                </label>
-              </Card>
-            ))}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading templates...</span>
           </div>
-        </RadioGroup>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-destructive text-sm mb-2">Failed to load templates</p>
+            <p className="text-muted-foreground text-xs">{error}</p>
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground text-sm">No templates available</p>
+          </div>
+        ) : (
+          <RadioGroup 
+            value={selectedTemplate?.toString() || ''} 
+            onValueChange={(value) => setSelectedTemplate(parseInt(value))}
+          >
+            <div className="space-y-4">
+              {templates.map((template) => (
+                <Card key={template.id} className="border border-border/50">
+                  <label
+                    htmlFor={template.id.toString()}
+                    className="flex items-center p-4 cursor-pointer hover:bg-muted/10 transition-colors"
+                  >
+                    <RadioGroupItem
+                      value={template.id.toString()}
+                      id={template.id.toString()}
+                      className="mr-4"
+                    />
+                    <div className="flex items-center flex-1">
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mr-4">
+                        <FileText className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <h3 className="font-medium text-base">{template.name}</h3>
+                          {template.is_default && (
+                            <span className="ml-2 text-xs bg-muted px-2 py-1 rounded-full">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {template.description || 'No description available'}
+                        </p>
+                        <div className="mt-1">
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {template.type.replace(/-/g, ' ')} • {template.sections?.length || 0} sections
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                </Card>
+              ))}
+            </div>
+          </RadioGroup>
+        )}
       </div>
 
       {/* Continue Button - Fixed at bottom */}
@@ -115,7 +132,7 @@ export function MobileReportTemplateSelectionPage({
         <Button
           onClick={handleContinue}
           className="w-full"
-          disabled={!selectedTemplate}
+          disabled={!selectedTemplate || loading}
         >
           Continue to Preview
         </Button>
