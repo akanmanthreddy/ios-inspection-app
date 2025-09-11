@@ -37,8 +37,8 @@ export function MobileCompletionOptionsPage({
 
       {/* Options */}
       <div className="px-6 py-8">
-        <div className="space-y-4">
-          <p className="text-center text-muted-foregroundmb-6">
+        <div className="space-y-4 max-w-sm mx-auto">
+          <p className="text-center text-muted-foreground mb-6 text-sm px-4">
             How would you like to complete this inspection?
           </p>
 
@@ -47,14 +47,14 @@ export function MobileCompletionOptionsPage({
             <Button
               variant="ghost"
               onClick={onPreviewReport}
-              className="w-full p-6 h-auto flex flex-col items-center space-y-4 hover:bg-muted/10"
+              className="w-full p-6 h-auto flex flex-col items-center space-y-4 hover:bg-muted/10 hover:text-foreground"
             >
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <FileText className="w-8 h-8 text-primary" />
               </div>
-              <div className="text-center">
+              <div className="text-center w-full px-4">
                 <h3 className="font-medium text-base mb-2">Preview Report</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
                   Generate a PDF preview where you can select templates, review the report, and finalize or share it
                 </p>
               </div>
@@ -66,14 +66,14 @@ export function MobileCompletionOptionsPage({
             <Button
               variant="ghost"
               onClick={onFinalizeWithoutSigning}
-              className="w-full p-6 h-auto flex flex-col items-center space-y-4 hover:bg-muted/10"
+              className="w-full p-6 h-auto flex flex-col items-center space-y-4 hover:bg-muted/10 hover:text-foreground"
             >
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <div className="text-center">
+              <div className="text-center w-full px-4">
                 <h3 className="font-medium text-base mb-2">Finalize Without Signing</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
                   Complete the inspection immediately without generating a report preview
                 </p>
               </div>

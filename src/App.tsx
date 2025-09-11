@@ -116,11 +116,22 @@ function AppContent() {
   const handleFinalizeWithoutSigning = async () => {
     try {
       console.log('Finalizing inspection without report:', inspectionFormData);
-      // Navigate back to the community they were in
-      resetToRoot();
-      navigateToPage('communities');
-      if (selectedCommunity) {
-        setSelectedCommunity(selectedCommunity);
+      // Navigate back to the properties page of the community they were in
+      const communityId = selectedCommunity;
+      if (communityId) {
+        // Clear inspection-specific state but keep community selection
+        setSelectedProperty(null);
+        setCurrentInspectionId(null);
+        setInspectionFormData(null);
+        setSelectedInspectionTemplate(null);
+        
+        // Navigate to properties page
+        setCurrentPage('properties');
+        setNavigationStack(['landing', 'communities', 'properties']);
+      } else {
+        // Fallback to communities if no community selected
+        resetToRoot();
+        navigateToPage('communities');
       }
     } catch (error) {
       console.error('Error finalizing inspection:', error);
@@ -135,11 +146,23 @@ function AppContent() {
   const handleFinalizeReport = async () => {
     try {
       console.log('Finalizing report with template:', selectedReportTemplate, inspectionFormData);
-      // Navigate back to community
-      resetToRoot();
-      navigateToPage('communities');
-      if (selectedCommunity) {
-        setSelectedCommunity(selectedCommunity);
+      // Navigate back to the properties page of the community they were in
+      const communityId = selectedCommunity;
+      if (communityId) {
+        // Clear inspection-specific state but keep community selection
+        setSelectedProperty(null);
+        setCurrentInspectionId(null);
+        setInspectionFormData(null);
+        setSelectedInspectionTemplate(null);
+        setSelectedReportTemplate('default');
+        
+        // Navigate to properties page
+        setCurrentPage('properties');
+        setNavigationStack(['landing', 'communities', 'properties']);
+      } else {
+        // Fallback to communities if no community selected
+        resetToRoot();
+        navigateToPage('communities');
       }
     } catch (error) {
       console.error('Error finalizing report:', error);
@@ -149,11 +172,22 @@ function AppContent() {
   const handleShareReport = async (email: string) => {
     try {
       console.log('Sharing report to email:', email, 'with template:', selectedReportTemplate);
-      // Navigate back to community
-      resetToRoot();
-      navigateToPage('communities');
+      // Navigate back to the properties page of the community they were in
       if (selectedCommunity) {
-        setSelectedCommunity(selectedCommunity);
+        // Clear inspection-specific state but keep community selection
+        setSelectedProperty(null);
+        setCurrentInspectionId(null);
+        setInspectionFormData(null);
+        setSelectedInspectionTemplate(null);
+        setSelectedReportTemplate('default');
+        
+        // Navigate to properties page
+        setCurrentPage('properties');
+        setNavigationStack(['landing', 'communities', 'properties']);
+      } else {
+        // Fallback to communities if no community selected
+        resetToRoot();
+        navigateToPage('communities');
       }
     } catch (error) {
       console.error('Error sharing report:', error);
@@ -296,7 +330,7 @@ function AppContent() {
             propertyId={selectedProperty.id}
             propertyAddress={selectedProperty.address}
             inspectionId={currentInspectionId}
-            templateId={selectedInspectionTemplate || undefined}
+            templateId={selectedInspectionTemplate || 1}
             onBack={navigateBack}
             onComplete={handleInspectionFormComplete}
           />

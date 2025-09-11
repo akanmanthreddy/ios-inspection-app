@@ -9,7 +9,7 @@ import { Template } from '../../services/api';
 interface MobileReportTemplateSelectionPageProps {
   propertyAddress: string;
   onBack: () => void;
-  onSelectTemplate: (templateId: number) => void;
+  onSelectTemplate: (templateId: string) => void;
 }
 
 export function MobileReportTemplateSelectionPage({
@@ -21,13 +21,13 @@ export function MobileReportTemplateSelectionPage({
   const { templates, loading, error } = useTemplates();
   
   // Set default selection to the first template that is marked as default, or the first template
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   // Update selection when templates load
   React.useEffect(() => {
     if (templates.length > 0 && selectedTemplate === null) {
       const defaultTemplate = templates.find(t => t.is_default) || templates[0];
-      setSelectedTemplate(defaultTemplate.id);
+      setSelectedTemplate(defaultTemplate.id.toString());
     }
   }, [templates, selectedTemplate]);
 
@@ -81,8 +81,8 @@ export function MobileReportTemplateSelectionPage({
           </div>
         ) : (
           <RadioGroup 
-            value={selectedTemplate?.toString() || ''} 
-            onValueChange={(value) => setSelectedTemplate(parseInt(value))}
+            value={selectedTemplate || ''} 
+            onValueChange={(value) => setSelectedTemplate(value)}
           >
             <div className="space-y-4">
               {templates.map((template) => (
