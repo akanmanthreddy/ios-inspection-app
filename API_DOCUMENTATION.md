@@ -244,6 +244,7 @@ Get inspections for a specific property.
   {
     "id": 1,
     "property_id": 1,
+    "template_id": "1e9b6a9d-1b1a-4f5c-8d7b-9c6d2e1a3b4c",
     "inspector_id": "inspector123",
     "scheduled_date": "2025-01-15T10:00:00.000Z",
     "type": "move-in",
@@ -254,6 +255,46 @@ Get inspections for a specific property.
     "updated_at": "2025-01-01T12:00:00.000Z"
   }
 ]
+```
+
+### GET /api/inspections/all
+Get all inspections across all properties with enriched data including property addresses and community names.
+
+**Query Parameters (optional):**
+- `status` - Filter by inspection status (e.g., "completed", "scheduled", "in_progress")
+- `type` - Filter by inspection type (e.g., "routine", "move-in", "move-out")
+- `community` - Filter by community ID
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "property_id": "uuid",
+    "property_address": "1234 Oak Street, Unit A",
+    "community_id": "uuid",
+    "community_name": "Sunset Ridge",
+    "template_id": "uuid",
+    "inspector_id": "uuid",
+    "inspector_name": null,
+    "scheduled_date": "2025-01-15T10:00:00.000Z",
+    "completed_at": "2025-01-15T11:30:00.000Z",
+    "type": "routine",
+    "status": "completed",
+    "notes": "Inspection completed successfully",
+    "issues_count": 2,
+    "created_at": "2025-01-01T12:00:00.000Z",
+    "updated_at": "2025-01-01T12:00:00.000Z"
+  }
+]
+```
+
+**Example Requests:**
+```
+GET /api/inspections/all                     # Get all inspections
+GET /api/inspections/all?status=completed    # Get only completed inspections  
+GET /api/inspections/all?type=routine        # Get only routine inspections
+GET /api/inspections/all?community=uuid      # Get inspections for specific community
 ```
 
 ### GET /api/inspections/:id
@@ -267,6 +308,7 @@ Get a single inspection by ID.
 {
   "id": 1,
   "property_id": 1,
+  "template_id": "1e9b6a9d-1b1a-4f5c-8d7b-9c6d2e1a3b4c",
   "inspector_id": "inspector123",
   "scheduled_date": "2025-01-15T10:00:00.000Z",
   "type": "move-in",
@@ -278,6 +320,91 @@ Get a single inspection by ID.
 }
 ```
 
+### GET /api/inspections/:id/detailed
+Get a comprehensive inspection with template data, item responses, and photos.
+
+**Parameters:**
+- `id` (path) - Inspection ID
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "template_id": "uuid",
+  "inspector_id": "uuid",
+  "scheduled_date": "2025-01-15T10:00:00.000Z",
+  "started_at": "2025-01-15T09:00:00.000Z",
+  "completed_at": "2025-01-15T11:30:00.000Z",
+  "status": "completed",
+  "type": "routine",
+  "notes": "Inspection completed successfully",
+  "created_at": "2025-01-01T12:00:00.000Z",
+  "updated_at": "2025-01-01T12:00:00.000Z",
+  "issues": [
+    {
+      "id": "uuid",
+      "category": "Plumbing",
+      "description": "Leaky faucet in kitchen",
+      "severity": "medium",
+      "resolved": false
+    }
+  ],
+  "template": {
+    "id": "uuid",
+    "name": "Routine Inspection",
+    "description": "Standard quarterly inspection",
+    "type": "cofo-property",
+    "sections": [
+      {
+        "id": "uuid",
+        "name": "Kitchen",
+        "description": "Kitchen inspection items",
+        "order_index": 1,
+        "items": [
+          {
+            "id": "uuid",
+            "name": "Sink Condition",
+            "type": "pass_fail",
+            "required": true,
+            "order_index": 1,
+            "options": null
+          }
+        ]
+      }
+    ]
+  },
+  "inspection_results": [
+    {
+      "id": "uuid",
+      "template_item_id": "uuid",
+      "status": "good",
+      "rating": 4,
+      "text_response": "Hardwood floors in excellent condition",
+      "notes": "Item-specific inspector notes",
+      "photos": ["/uploads/photo1.jpg", "/uploads/photo2.jpg"],
+      "created_at": "2025-01-15T11:00:00.000Z",
+      "updated_at": "2025-01-15T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Response Fields:**
+- All standard inspection fields
+- `issues` - Array of issues found during inspection
+- `template` - Complete template structure with sections and items
+- `inspection_results` - Array of item responses with:
+  - `status` - Response value ("good", "fair", "repair")
+  - `rating` - Numeric rating if provided
+  - `text_response` - Text response if provided
+  - `notes` - Item-specific notes
+  - `photos` - Array of photo file paths
+
+**Error Responses:**
+- `404` - Inspection not found
+- `500` - Database error
+
 ### POST /api/inspections
 Create a new inspection.
 
@@ -287,11 +414,21 @@ Create a new inspection.
   "propertyId": 1,
   "inspectorId": "inspector123",
   "scheduledDate": "2025-01-15T10:00:00.000Z",
-  "type": "move-in"
+  "type": "move-in",
+  "template_id": "1e9b6a9d-1b1a-4f5c-8d7b-9c6d2e1a3b4c"
 }
 ```
 
+**Required Fields:** `propertyId`, `inspectorId`, `scheduledDate`, `type`, `template_id`
+
 **Response:** `201` - Created inspection object (status automatically set to "scheduled")
+
+**Error Response (400):**
+```json
+{
+  "error": "template_id is required"
+}
+```
 
 ### PUT /api/inspections/:id
 Update an inspection.
@@ -312,7 +449,7 @@ Update an inspection.
 **Response:** `200` - Updated inspection object
 
 ### POST /api/inspections/:id/complete
-Complete an inspection with issues.
+Complete an inspection with detailed item responses, issues, and photos.
 
 **Parameters:**
 - `id` (path) - Inspection ID
@@ -334,11 +471,60 @@ Complete an inspection with issues.
       "severity": "high",
       "resolved": false
     }
+  ],
+  "itemResponses": [
+    {
+      "templateItemId": "uuid",
+      "status": "good",
+      "rating": 4,
+      "textResponse": "Hardwood floors in excellent condition",
+      "notes": "Item-specific inspector notes",
+      "photos": ["/uploads/photo1.jpg", "/uploads/photo2.jpg"]
+    },
+    {
+      "templateItemId": "uuid",
+      "status": "repair",
+      "notes": "Needs immediate attention"
+    },
+    {
+      "templateItemId": "uuid",
+      "status": "fair",
+      "rating": 3
+    }
   ]
 }
 ```
 
-**Response:** `200` - Updated inspection object (status set to "completed", completed_at timestamp added)
+**Required Fields:** `notes` (string)
+**Optional Fields:** `issues` (array), `itemResponses` (array)
+
+**Item Response Fields:**
+- `templateItemId` (required) - UUID of the template item being responded to
+- `status` (required) - Response status. **Must be one of**: `"good"`, `"fair"`, `"repair"`
+- `rating` (optional) - Numeric rating (e.g., 1-5 scale)
+- `textResponse` (optional) - Free text response for text input fields
+- `notes` (optional) - Item-specific inspector notes
+- `photos` (optional) - Array of photo file paths/URLs
+
+**Response:** `200` - Completion result with saved response count
+```json
+{
+  "message": "Inspection completed successfully",
+  "inspection": {
+    "id": "uuid",
+    "status": "completed",
+    "completed_at": "2025-01-15T11:30:00.000Z",
+    "notes": "Inspection completed successfully",
+    // ... other inspection fields
+  },
+  "savedResponses": 3
+}
+```
+
+**Error Responses:**
+- `400` - Invalid status value (must be "good", "fair", or "repair")
+- `404` - Inspection not found
+- `500` - Database error during completion
 
 ### DELETE /api/inspections/:id
 Delete an inspection.
@@ -732,12 +918,30 @@ All messages sent to the WebSocket server are broadcast to all other connected c
 
 The application uses the following main tables:
 
+### Core Tables
 - `communities` - Housing communities/developments
 - `properties` - Individual properties within communities  
 - `inspections` - Scheduled and completed inspections
 - `inspection_issues` - Issues found during inspections
+
+### Template System
 - `inspection_templates` - Customizable inspection form templates
-- `template_sections` - Sections within templates
-- `template_items` - Individual form fields within sections
+- `template_sections` - Sections within templates (e.g., "Kitchen", "Bathroom")
+- `template_items` - Individual form fields within sections (e.g., "Sink Condition")
+
+### Response System
+- `inspection_results` - Item responses and ratings from completed inspections
+  - Links to `inspections` and `template_items`
+  - Stores response values (`status`, `rating`, `text_response`, `notes`)
+  - Status constraint: only allows `'good'`, `'fair'`, `'repair'`
+- `files` - File metadata and storage references
+  - Stores photos and documents with `entity_type` and `entity_id` relationships
+  - Entity types: `'inspection_issue'`, `'inspection_item'`, `'property'`, `'community'`
+
+### Key Relationships
+- `inspections` → `inspection_templates` (many-to-one)
+- `inspection_results` → `inspections` + `template_items` (many-to-one each)
+- `files` → various entities via `entity_type`/`entity_id` (polymorphic)
+- `inspection_issues` → `inspections` (many-to-one)
 
 All tables include `created_at` and `updated_at` timestamp fields for auditing.

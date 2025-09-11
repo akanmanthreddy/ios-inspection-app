@@ -20,6 +20,8 @@ import { useCommunities } from './hooks/useCommunities';
 import { useProperties } from './hooks/useProperties';
 import { useInspections } from './hooks/useInspections';
 import { CreateInspectionData, CreateInspectionItemResponse, apiClient } from './services/api';
+import { PhotoUploadService } from './services/photoUpload';
+import { PhotoData } from './types';
 
 type AppState = 'landing' | 'communities' | 'properties' | 'inspections' | 'inspection-detail' | 'inspections-overview' | 'inspection-form' | 'completion-options' | 'template-selection' | 'report-preview' | 'property-reports' | 'start-inspection';
 
@@ -116,13 +118,54 @@ function AppContent() {
     navigateToPage('template-selection');
   };
 
+  // Helper function to upload photos for inspection items
+  const uploadInspectionPhotos = async (inspectionFormData: any, currentInspectionId: string): Promise<Record<string, string[]>> => {
+    const uploadedPhotoUrls: Record<string, string[]> = {};
+    
+    // Get photos from form data
+    const photosData = inspectionFormData.photos as Record<string, PhotoData[]>;
+    if (!photosData || Object.keys(photosData).length === 0) {
+      console.log('📷 No photos to upload');
+      return uploadedPhotoUrls;
+    }
+    
+    console.log(`📤 Starting photo upload for ${Object.keys(photosData).length} items`);
+    
+    // Upload photos for each item
+    for (const [itemId, photos] of Object.entries(photosData)) {
+      if (photos && photos.length > 0) {
+        try {
+          console.log(`📸 Uploading ${photos.length} photos for item ${itemId}`);
+          
+          const uploadResults = await PhotoUploadService.uploadPhotos(photos, {
+            inspectionId: currentInspectionId,
+            itemId: itemId,
+            quality: 80
+          });
+          
+          uploadedPhotoUrls[itemId] = uploadResults.map(result => result.url);
+          console.log(`✅ Uploaded ${uploadResults.length} photos for item ${itemId}`);
+        } catch (error) {
+          console.error(`❌ Failed to upload photos for item ${itemId}:`, error);
+          // Continue with other items even if one fails
+        }
+      }
+    }
+    
+    console.log('📤 Photo upload complete. Total items with photos:', Object.keys(uploadedPhotoUrls).length);
+    return uploadedPhotoUrls;
+  };
+
   const handleFinalizeWithoutSigning = async () => {
     try {
       console.log('Finalizing inspection without report:', inspectionFormData);
       
       // Save inspection data to database if we have form data and inspection ID
       if (inspectionFormData && currentInspectionId) {
-        // Convert form data to inspection issues format
+        // Step 1: Upload photos to Supabase Storage
+        const uploadedPhotoUrls = await uploadInspectionPhotos(inspectionFormData, currentInspectionId);
+        
+        // Step 2: Convert form data to inspection issues format
         const issues = [];
         const notes = [];
         const itemResponses: CreateInspectionItemResponse[] = [];
@@ -142,7 +185,7 @@ function AppContent() {
                 description: data.comment || `Item requires repair: ${itemId}`,
                 severity: 'medium' as const, // Default to medium severity
                 resolved: false,
-                photos: data.hasPhoto ? ['photo-placeholder'] : []
+                photos: uploadedPhotoUrls[itemId] || []
               });
             }
             
@@ -185,7 +228,7 @@ function AppContent() {
               }
               
               if (data.hasPhoto && data.photoCount > 0) {
-                response.photos = ['photo-placeholder']; // TODO: Replace with actual photo URLs
+                response.photos = uploadedPhotoUrls[itemId] || [];
               }
               
               itemResponses.push(response);
@@ -201,9 +244,10 @@ function AppContent() {
         const inspectionNotes = notes.length > 0 ? notes.join('\n') : 'Inspection completed successfully';
         
         console.log('🔍 Raw inspection form data:', inspectionFormData);
-        console.log('Saving inspection with issues:', issues);
-        console.log('Saving inspection with item responses:', itemResponses);
-        console.log('Inspection notes:', inspectionNotes);
+        console.log('💾 Saving inspection with issues:', issues);
+        console.log('💾 Saving inspection with item responses:', itemResponses);
+        console.log('💾 Photo URLs uploaded:', uploadedPhotoUrls);
+        console.log('💾 Inspection notes:', inspectionNotes);
         
         // Validate item responses before sending
         const validateItemResponses = (responses: CreateInspectionItemResponse[]) => {
@@ -320,10 +364,30 @@ function AppContent() {
     }
   };
 
-  const handleViewInspection = (inspectionId: string, propertyAddress: string) => {
-    // For now, this could navigate to a detailed inspection view
-    // In a real app, you might have a dedicated inspection details page
-    console.log('Viewing inspection:', inspectionId, propertyAddress);
+  const handleViewInspection = async (inspectionId: string, propertyAddress: string) => {
+    try {
+      console.log('🔍 Fetching detailed inspection data for:', inspectionId);
+      // Try to fetch detailed inspection data
+      const detailedInspection = await apiClient.getDetailedInspection(inspectionId);
+      console.log('✅ Got detailed inspection data:', detailedInspection);
+      setSelectedInspectionForDetail(detailedInspection);
+    } catch (error) {
+      console.log('⚠️ Failed to fetch detailed data, creating fallback inspection object:', error);
+      // Fallback to basic inspection data if detailed fetch fails
+      const fallbackInspection = {
+        id: inspectionId,
+        propertyId: 'unknown',
+        inspectorId: 'unknown',
+        inspectorName: 'Unknown Inspector',
+        date: new Date().toISOString(),
+        status: 'completed' as const,
+        type: 'routine' as const,
+        issues: [],
+        notes: 'Inspection details not available'
+      };
+      setSelectedInspectionForDetail(fallbackInspection);
+    }
+    navigateToPage('inspection-detail');
   };
 
   const handleStartNewInspection = () => {

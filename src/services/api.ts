@@ -99,6 +99,25 @@ export interface DetailedInspection extends Inspection {
   itemResponses?: InspectionItemResponse[]; // Responses to each template item
 }
 
+export interface EnrichedInspection {
+  id: string;
+  property_id: string;
+  property_address: string;
+  community_id: string;
+  community_name: string;
+  template_id: string;
+  inspector_id: string;
+  inspector_name: string | null;
+  scheduled_date: string;
+  completed_at: string | null;
+  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
+  notes: string | null;
+  issues_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InspectionIssue {
   id: string;
   category: string;
@@ -405,6 +424,20 @@ class ApiClient {
   async getInspections(propertyId?: string): Promise<Inspection[]> {
     const query = propertyId ? `?propertyId=${propertyId}` : '';
     return this.request<Inspection[]>(`/inspections${query}`);
+  }
+
+  async getAllInspectionsEnriched(filters?: {
+    status?: string;
+    type?: string;
+    community?: string;
+  }): Promise<EnrichedInspection[]> {
+    const queryParams = new URLSearchParams();
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.type) queryParams.append('type', filters.type);
+    if (filters?.community) queryParams.append('community', filters.community);
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return this.request<EnrichedInspection[]>(`/inspections/all${query}`);
   }
 
   async getInspection(id: string): Promise<Inspection> {

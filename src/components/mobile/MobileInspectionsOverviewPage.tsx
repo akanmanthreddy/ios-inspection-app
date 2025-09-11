@@ -4,6 +4,9 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { useAllInspections } from '../../hooks/useAllInspections';
+import { LoadingSpinner } from '../LoadingSpinner';
+import { ErrorMessage } from '../ErrorMessage';
 
 interface MobileInspectionsOverviewPageProps {
   onViewInspection: (inspectionId: string, propertyAddress: string) => void;
@@ -20,64 +23,19 @@ export function MobileInspectionsOverviewPage({
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending' | 'in-progress'>('all');
   const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in' | 'annual'>('all');
 
-  // Mock data - in production this would come from props or hooks
-  const allInspections = [
-    {
-      id: '1',
-      propertyAddress: '1234 Oak Street, Unit A',
-      community: 'Sunset Ridge',
-      date: '2024-01-15',
-      type: 'move-out',
-      inspectionType: 'Move-out Inspection',
-      status: 'completed' as const,
-      inspector: 'John Smith',
-      issues: 2
-    },
-    {
-      id: '2',
-      propertyAddress: '1234 Oak Street, Unit B',
-      community: 'Sunset Ridge',
-      date: '2024-01-16',
-      type: 'routine',
-      inspectionType: 'Routine Inspection',
-      status: 'in-progress' as const,
-      inspector: 'Current User',
-      issues: 0
-    },
-    {
-      id: '3',
-      propertyAddress: '5678 Pine Avenue, Unit 12',
-      community: 'Garden View',
-      date: '2024-01-17',
-      type: 'maintenance',
-      inspectionType: 'Maintenance Inspection',
-      status: 'pending' as const,
-      inspector: 'Current User',
-      issues: 0
-    },
-    {
-      id: '4',
-      propertyAddress: '9012 Maple Drive, Unit C',
-      community: 'Riverside',
-      date: '2024-01-14',
-      type: 'move-in',
-      inspectionType: 'Move-in Inspection',
-      status: 'completed' as const,
-      inspector: 'Jane Doe',
-      issues: 5
-    },
-    {
-      id: '5',
-      propertyAddress: '3456 Cedar Lane, Unit 8',
-      community: 'Hillside Manor',
-      date: '2024-01-13',
-      type: 'annual',
-      inspectionType: 'Annual Inspection',
-      status: 'completed' as const,
-      inspector: 'Current User',
-      issues: 1
-    }
-  ];
+  // Use live API data via the useAllInspections hook
+  const { inspections: allInspections, loading, error, refetch } = useAllInspections();
+
+  // Handle loading state
+  if (loading) {
+    return <LoadingSpinner message="Loading inspections..." />;
+  }
+
+  // Handle error state
+  if (error) {
+    return <ErrorMessage message={error} onRetry={refetch} />;
+  }
+
 
   const filteredInspections = allInspections.filter(inspection => {
     const matchesSearch = !searchQuery || 
@@ -155,7 +113,7 @@ export function MobileInspectionsOverviewPage({
             onClick={() => setFilterStatus('all')}
           >
             <div className="text-lg font-medium text-primary mb-1">{statusCounts.all}</div>
-            <div className="text-xs text-muted">All</div>
+            <div className="text-xs text-slate-600">All</div>
           </Card>
           <Card 
             className={`p-3 text-center cursor-pointer transition-colors ${
@@ -164,7 +122,7 @@ export function MobileInspectionsOverviewPage({
             onClick={() => setFilterStatus('completed')}
           >
             <div className="text-lg font-medium text-green-600 mb-1">{statusCounts.completed}</div>
-            <div className="text-xs text-muted">Done</div>
+            <div className="text-xs text-slate-600">Done</div>
           </Card>
           <Card 
             className={`p-3 text-center cursor-pointer transition-colors ${
@@ -173,7 +131,7 @@ export function MobileInspectionsOverviewPage({
             onClick={() => setFilterStatus('in-progress')}
           >
             <div className="text-lg font-medium text-blue-600 mb-1">{statusCounts['in-progress']}</div>
-            <div className="text-xs text-muted">Active</div>
+            <div className="text-xs text-slate-600">Active</div>
           </Card>
           <Card 
             className={`p-3 text-center cursor-pointer transition-colors ${
@@ -182,7 +140,7 @@ export function MobileInspectionsOverviewPage({
             onClick={() => setFilterStatus('pending')}
           >
             <div className="text-lg font-medium text-yellow-600 mb-1">{statusCounts.pending}</div>
-            <div className="text-xs text-muted">Pending</div>
+            <div className="text-xs text-slate-600">Pending</div>
           </Card>
         </div>
       </div>
@@ -190,7 +148,7 @@ export function MobileInspectionsOverviewPage({
       {/* Search */}
       <div className="px-6 py-4 bg-background border-b border-border/30">
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
           <Input
             type="text"
             placeholder="Search inspections..."
@@ -202,7 +160,7 @@ export function MobileInspectionsOverviewPage({
 
         {/* Type Filter */}
         <div>
-          <p className="text-muted text-sm mb-2">Filter by Type</p>
+          <p className="text-slate-600 text-sm mb-2">Filter by Type</p>
           <div className="flex space-x-2 overflow-x-auto pb-2">
             {[
               { key: 'all', label: 'All Types' },
@@ -230,9 +188,9 @@ export function MobileInspectionsOverviewPage({
       <div className="px-6 py-6">
         {filteredInspections.length === 0 ? (
           <div className="text-center py-12">
-            <Search className="w-12 h-12 text-muted mx-auto mb-4" />
+            <Search className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <h3 className="font-medium text-foreground mb-2">No inspections found</h3>
-            <p className="text-sm text-muted mb-4">
+            <p className="text-sm text-slate-600 mb-4">
               Try adjusting your search or filter criteria.
             </p>
             <Button 
@@ -258,8 +216,8 @@ export function MobileInspectionsOverviewPage({
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-medium text-base mb-1">{inspection.propertyAddress}</h3>
-                    <p className="text-sm text-muted mb-1">{inspection.community}</p>
-                    <p className="text-xs text-muted font-medium">{inspection.inspectionType}</p>
+                    <p className="text-sm text-slate-600 mb-1">{inspection.community}</p>
+                    <p className="text-xs text-slate-700 font-medium">{inspection.inspectionType}</p>
                   </div>
                   <Badge className={getStatusColor(inspection.status)}>
                     <div className="flex items-center">
@@ -269,7 +227,7 @@ export function MobileInspectionsOverviewPage({
                   </Badge>
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-muted">
+                <div className="flex items-center justify-between text-sm text-slate-600">
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     {new Date(inspection.date).toLocaleDateString('en-US', {
