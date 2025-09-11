@@ -4,6 +4,7 @@ import { MobileLandingPage } from './components/mobile/MobileLandingPage';
 import { MobileCommunitiesPage } from './components/mobile/MobileCommunitiesPage';
 import { MobilePropertiesPage } from './components/mobile/MobilePropertiesPage';
 import { MobileInspectionsPage } from './components/mobile/MobileInspectionsPage';
+import { MobileInspectionDetailPage } from './components/mobile/MobileInspectionDetailPage';
 import { MobileInspectionFormPage } from './components/mobile/MobileInspectionFormPage';
 import { MobileCompletionOptionsPage } from './components/mobile/MobileCompletionOptionsPage';
 import { MobileReportTemplateSelectionPage } from './components/mobile/MobileReportTemplateSelectionPage';
@@ -18,9 +19,9 @@ import { Toaster } from './components/ui/sonner';
 import { useCommunities } from './hooks/useCommunities';
 import { useProperties } from './hooks/useProperties';
 import { useInspections } from './hooks/useInspections';
-import { CreateInspectionData } from './services/api';
+import { CreateInspectionData, CreateInspectionItemResponse, apiClient } from './services/api';
 
-type AppState = 'landing' | 'communities' | 'properties' | 'inspections' | 'inspections-overview' | 'inspection-form' | 'completion-options' | 'template-selection' | 'report-preview' | 'property-reports' | 'start-inspection';
+type AppState = 'landing' | 'communities' | 'properties' | 'inspections' | 'inspection-detail' | 'inspections-overview' | 'inspection-form' | 'completion-options' | 'template-selection' | 'report-preview' | 'property-reports' | 'start-inspection';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<AppState>('landing');
@@ -32,6 +33,7 @@ function AppContent() {
   const [inspectionFormData, setInspectionFormData] = useState<any>(null);
   const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('default');
   const [selectedInspectionTemplate, setSelectedInspectionTemplate] = useState<string | number | null>(null);
+  const [selectedInspectionForDetail, setSelectedInspectionForDetail] = useState<any>(null);
   const [navigationStack, setNavigationStack] = useState<AppState[]>(['landing']);
 
   // API Integration Hooks - always call hooks (rules of hooks)
@@ -123,10 +125,14 @@ function AppContent() {
         // Convert form data to inspection issues format
         const issues = [];
         const notes = [];
+        const itemResponses: CreateInspectionItemResponse[] = [];
         
         for (const [itemId, itemData] of Object.entries(inspectionFormData)) {
           if (itemData && typeof itemData === 'object') {
             const data = itemData as any; // Type assertion for form data structure
+            
+            // Skip photos metadata - we only want actual template item responses
+            if (itemId === 'photos') continue;
             
             // Only include items that need repair as issues
             if (data.status === 'repair') {
@@ -140,6 +146,51 @@ function AppContent() {
               });
             }
             
+            // Collect ALL item responses (not just repair items)
+            if (data.status) {
+              // Extract actual template item UUID from the itemId
+              // itemId format is 'item-{uuid}' from the form
+              const actualTemplateItemId = itemId.startsWith('item-') ? itemId.substring(5) : itemId;
+              
+              // Validate and map status to ensure only valid values are sent
+              const mapFormStatusToValidStatus = (formStatus: string): string => {
+                switch (formStatus) {
+                  case 'good':
+                    return 'good';
+                  case 'fair':
+                    return 'fair';
+                  case 'repair':
+                    return 'repair';
+                  // Handle any legacy or unexpected values
+                  case 'excellent':
+                    return 'good';
+                  case 'poor':
+                    return 'repair';
+                  default:
+                    console.warn(`Unexpected status value: ${formStatus}, defaulting to 'fair'`);
+                    return 'fair';
+                }
+              };
+              
+              const validStatus = mapFormStatusToValidStatus(data.status);
+              
+              const response: CreateInspectionItemResponse = {
+                templateItemId: actualTemplateItemId,
+                status: validStatus, // Ensures only 'good', 'fair', 'repair'
+              };
+              
+              // Add optional fields only if they have values
+              if (data.comment && data.comment.trim()) {
+                response.notes = data.comment.trim();
+              }
+              
+              if (data.hasPhoto && data.photoCount > 0) {
+                response.photos = ['photo-placeholder']; // TODO: Replace with actual photo URLs
+              }
+              
+              itemResponses.push(response);
+            }
+            
             // Collect all notes for general inspection notes
             if (data.comment) {
               notes.push(`${itemId}: ${data.comment}`);
@@ -149,11 +200,35 @@ function AppContent() {
         
         const inspectionNotes = notes.length > 0 ? notes.join('\n') : 'Inspection completed successfully';
         
+        console.log('🔍 Raw inspection form data:', inspectionFormData);
         console.log('Saving inspection with issues:', issues);
+        console.log('Saving inspection with item responses:', itemResponses);
         console.log('Inspection notes:', inspectionNotes);
         
-        // Complete the inspection in the database
-        await completeInspection(currentInspectionId, issues, inspectionNotes);
+        // Validate item responses before sending
+        const validateItemResponses = (responses: CreateInspectionItemResponse[]) => {
+          const validStatuses = ['good', 'fair', 'repair'];
+          
+          for (const response of responses) {
+            if (!response.templateItemId) {
+              throw new Error('Missing templateItemId in response');
+            }
+            
+            if (!response.status || !validStatuses.includes(response.status)) {
+              throw new Error(`Invalid status "${response.status}". Must be one of: ${validStatuses.join(', ')}`);
+            }
+          }
+          
+          return true;
+        };
+        
+        // Validate before sending
+        validateItemResponses(itemResponses);
+        console.log('✅ Item responses validation passed');
+        
+        // Complete the inspection in the database with item responses
+        const result = await completeInspection(currentInspectionId, issues, inspectionNotes, itemResponses);
+        console.log('✅ Backend completion result:', result);
         
         console.log('✅ Inspection saved successfully to database');
       }
@@ -373,6 +448,29 @@ function AppContent() {
             propertyAddress={selectedProperty.address}
             inspections={inspections}
             loading={inspectionsLoading}
+            onBack={navigateBack}
+            onInspectionClick={async (inspection) => {
+              try {
+                console.log('🔍 Fetching detailed inspection data for:', inspection.id);
+                // Try to fetch detailed inspection data
+                const detailedInspection = await apiClient.getDetailedInspection(inspection.id);
+                console.log('✅ Got detailed inspection data:', detailedInspection);
+                setSelectedInspectionForDetail(detailedInspection);
+              } catch (error) {
+                console.log('⚠️ Failed to fetch detailed data, using basic data:', error);
+                // Fallback to basic inspection data if detailed fetch fails
+                setSelectedInspectionForDetail(inspection);
+              }
+              setCurrentPage('inspection-detail');
+              setNavigationStack([...navigationStack, 'inspection-detail']);
+            }}
+          />
+        ) : null;
+
+      case 'inspection-detail':
+        return selectedInspectionForDetail ? (
+          <MobileInspectionDetailPage
+            inspection={selectedInspectionForDetail}
             onBack={navigateBack}
           />
         ) : null;

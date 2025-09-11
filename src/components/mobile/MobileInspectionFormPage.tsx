@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronDown, Check, Star, Wrench, Camera, NotebookPen } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Check, Star, Wrench, Camera, NotebookPen, ImageIcon } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Progress } from '../ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { useTemplate } from '../../hooks/useTemplates';
+import { useCamera } from '../../hooks/useCamera';
+import { PhotoData } from '../../types';
 
 interface MobileInspectionFormPageProps {
   propertyId: string;
@@ -28,7 +30,13 @@ export function MobileInspectionFormPage({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [currentStickySection, setCurrentStickySection] = useState<string>('');
+  const [itemPhotos, setItemPhotos] = useState<Record<string, PhotoData[]>>({});
+  const [loadingCameraForItem, setLoadingCameraForItem] = useState<string | null>(null);
+  const [cameraErrorForItem, setCameraErrorForItem] = useState<Record<string, string>>({});
   const sectionRefs = useRef<Record<string, HTMLElement>>({});
+  
+  // Camera hook
+  const { choosePhoto } = useCamera();
 
   // Fetch template data if templateId is provided
   const shouldFetchTemplate = templateId !== undefined && templateId !== null;
@@ -210,11 +218,78 @@ export function MobileInspectionFormPage({
     }));
   };
 
-  const handleCameraClick = (itemId: string) => {
-    // In a real app, this would trigger the device camera
-    console.log('Opening camera for item:', itemId);
-    // For now, just simulate adding a photo
-    updateFormData(itemId, 'hasPhoto', true);
+  const handleCameraClick = async (itemId: string) => {
+    try {
+      console.log('🎯 Camera button clicked for item:', itemId);
+      console.log('📱 Using choosePhoto method (will prompt user)');
+      
+      // Set loading state for this specific item and clear any previous errors
+      setLoadingCameraForItem(itemId);
+      setCameraErrorForItem(prev => {
+        const updated = { ...prev };
+        delete updated[itemId];
+        return updated;
+      });
+      
+      const photo = await choosePhoto({ 
+        quality: 80, 
+        allowEditing: false 
+      });
+      
+      if (photo) {
+        console.log('📸 Photo received:', photo);
+        
+        // Add photo to item's photo collection
+        setItemPhotos(prev => {
+          const updated = {
+            ...prev,
+            [itemId]: [...(prev[itemId] || []), photo]
+          };
+          console.log('📊 Updated item photos:', updated);
+          return updated;
+        });
+        
+        // Update form data to indicate photo exists
+        const newPhotoCount = (itemPhotos[itemId]?.length || 0) + 1;
+        updateFormData(itemId, 'hasPhoto', true);
+        updateFormData(itemId, 'photoCount', newPhotoCount);
+        
+        console.log('✅ Photo captured successfully for item:', itemId, 'Photo ID:', photo.id, 'New count:', newPhotoCount);
+      } else {
+        console.log('❌ No photo received (user cancelled or error)');
+        // Don't show error for user cancellation - this is expected behavior
+      }
+    } catch (error) {
+      console.error('💥 Error taking photo for item:', itemId, error);
+      
+      // Only show error if it's not a user cancellation
+      const errorMessage = error instanceof Error ? error.message : 'Failed to capture photo';
+      if (!errorMessage.toLowerCase().includes('cancel')) {
+        setCameraErrorForItem(prev => ({
+          ...prev,
+          [itemId]: errorMessage
+        }));
+      }
+    } finally {
+      // Clear loading state for this item
+      setLoadingCameraForItem(null);
+    }
+  };
+  
+  const removePhotoFromItem = (itemId: string, photoId: string) => {
+    setItemPhotos(prev => {
+      const updated = {
+        ...prev,
+        [itemId]: (prev[itemId] || []).filter(photo => photo.id !== photoId)
+      };
+      
+      // Update form data
+      const photoCount = updated[itemId]?.length || 0;
+      updateFormData(itemId, 'hasPhoto', photoCount > 0);
+      updateFormData(itemId, 'photoCount', photoCount);
+      
+      return updated;
+    });
   };
 
   // Handle scroll to update sticky section header
@@ -259,7 +334,14 @@ export function MobileInspectionFormPage({
   };
 
   const handleSubmit = () => {
-    onComplete(formData);
+    // Include photos in the form data
+    const submissionData = {
+      ...formData,
+      photos: itemPhotos
+    };
+    
+    console.log('Submitting inspection with photos:', submissionData);
+    onComplete(submissionData);
   };
 
   return (
@@ -420,13 +502,18 @@ export function MobileInspectionFormPage({
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleCameraClick(item.id)}
+                                      disabled={loadingCameraForItem === item.id}
                                       className={`w-12 h-10 p-0 ${
                                         formData[item.id]?.hasPhoto 
                                           ? 'bg-blue-50 border-blue-200 text-blue-600' 
                                           : ''
-                                      }`}
+                                      } ${loadingCameraForItem === item.id ? 'opacity-50' : ''}`}
                                     >
-                                      <Camera className="w-4 h-4" />
+                                      {loadingCameraForItem === item.id ? (
+                                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <Camera className="w-4 h-4" />
+                                      )}
                                     </Button>
                                     <Button
                                       variant="outline"
@@ -470,12 +557,62 @@ export function MobileInspectionFormPage({
                                 </div>
                               )}
 
-                              {/* Photo indicator */}
-                              {formData[item.id]?.hasPhoto && (
+                              {/* Photos Section */}
+                              {itemPhotos[item.id] && itemPhotos[item.id].length > 0 && (
                                 <div className="mt-3 pt-3 border-t border-border/30">
-                                  <div className="flex items-center text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                                    <Camera className="w-3 h-3 mr-1" />
-                                    Photo attached
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center text-xs text-blue-600">
+                                      <ImageIcon className="w-3 h-3 mr-1" />
+                                      {itemPhotos[item.id].length} photo{itemPhotos[item.id].length > 1 ? 's' : ''} attached
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {itemPhotos[item.id].map((photo) => (
+                                      <div key={photo.id} className="relative group">
+                                        <div className="aspect-square bg-gray-100 rounded overflow-hidden">
+                                          <img 
+                                            src={photo.uri} 
+                                            alt={`Photo for ${item.label}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              // Fallback for broken images
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = 'none';
+                                              target.nextElementSibling?.classList.remove('hidden');
+                                            }}
+                                          />
+                                          <div className="hidden w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                                            <ImageIcon className="w-6 h-6" />
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => removePhotoFromItem(item.id, photo.id)}
+                                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-bold"
+                                          title="Remove photo"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Camera Error Display - Per Item */}
+                              {cameraErrorForItem[item.id] && (
+                                <div className="mt-3 pt-3 border-t border-border/30">
+                                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded flex items-center justify-between">
+                                    <span>Camera Error: {cameraErrorForItem[item.id]}</span>
+                                    <button
+                                      onClick={() => setCameraErrorForItem(prev => {
+                                        const updated = { ...prev };
+                                        delete updated[item.id];
+                                        return updated;
+                                      })}
+                                      className="ml-2 text-red-400 hover:text-red-600 text-sm font-bold"
+                                    >
+                                      ×
+                                    </button>
                                   </div>
                                 </div>
                               )}

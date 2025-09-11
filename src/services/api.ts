@@ -10,20 +10,22 @@ const isDevelopment = () => {
     
     // Force production mode if API_BASE_URL is configured and not localhost
     if (ENV.API_BASE_URL && !ENV.API_BASE_URL.includes('localhost')) {
-      console.log('🔧 Using PRODUCTION mode - API calls will go to:', ENV.API_BASE_URL);
+      console.log('🌐 Using PRODUCTION mode - API calls will go to:', ENV.API_BASE_URL);
       return false;
     }
     
-    // Check if we're in a development environment
-    const isDev = window.location.hostname === 'localhost' || 
-                  window.location.hostname === '127.0.0.1' ||
-                  window.location.hostname.includes('localhost');
+    // If API_BASE_URL contains localhost, check if it's actually running
+    if (ENV.API_BASE_URL && ENV.API_BASE_URL.includes('localhost')) {
+      console.log('🔧 Local API configured - will try API first, fallback to mock if needed');
+      return false; // Try API first
+    }
     
-    console.log('🔧 Using DEVELOPMENT mode - will use mock data. isDev:', isDev);
-    return isDev;
+    // Default fallback
+    console.log('🔧 No API configured - using mock data');
+    return true;
   } catch {
-    // Fallback to development mode if window is not available
-    console.log('🔧 Fallback to development mode');
+    // Fallback to mock mode if window is not available
+    console.log('🔧 Fallback to mock data mode');
     return true;
   }
 };
@@ -68,6 +70,33 @@ export interface Inspection {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  templateId?: string | number;
+}
+
+export interface InspectionItemResponse {
+  id: string;
+  inspectionId: string;
+  templateItemId: number;
+  value?: string; // The response value (rating, text, etc.)
+  notes?: string; // Item-specific notes
+  photos?: string[]; // Item-specific photos
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Interface for sending item responses to backend
+export interface CreateInspectionItemResponse {
+  templateItemId: string; // UUID from backend
+  status?: string; // For pass/fail, select responses
+  rating?: number; // For numeric ratings (1-5, etc.)
+  textResponse?: string; // For text input responses
+  notes?: string; // Item-specific notes
+  photos?: string[]; // Item-specific photos
+}
+
+export interface DetailedInspection extends Inspection {
+  template?: Template | undefined; // The template used for this inspection
+  itemResponses?: InspectionItemResponse[]; // Responses to each template item
 }
 
 export interface InspectionIssue {
@@ -251,7 +280,7 @@ class ApiClient {
           property_type: 'Apartment',
           status: 'active' as const,
           last_inspection: null,
-          next_inspection: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          next_inspection: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || null,
           assigned_inspector: 'Mock Inspector',
           issues_count: 0,
           created_at: new Date().toISOString(),
@@ -269,7 +298,7 @@ class ApiClient {
           id: `inspection-${Date.now()}`,
           propertyId: '1',
           inspectorName: 'Mock Inspector',
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toISOString().split('T')[0] || '',
           status: 'scheduled' as const,
           type: 'routine' as const,
           issues: [],
@@ -405,17 +434,197 @@ class ApiClient {
     });
   }
 
-  async completeInspection(id: string, issues: InspectionIssue[], notes?: string): Promise<Inspection> {
-    return this.request<Inspection>(`/inspections/${id}/complete`, {
-      method: 'POST',
-      body: JSON.stringify({ issues, notes }),
-    });
+  async completeInspection(
+    id: string, 
+    issues: InspectionIssue[], 
+    notes?: string, 
+    itemResponses?: CreateInspectionItemResponse[]
+  ): Promise<Inspection> {
+    // Debug: Use test payload with hardcoded values
+    const payload = {
+      issues: issues || [],
+      notes: notes || "Test completion",
+      itemResponses: itemResponses && itemResponses.length > 0 ? itemResponses : [
+        {
+          templateItemId: "833d71e0-ca9a-4a1f-84aa-d2233905539c",
+          status: "good",
+          notes: "Frontend test 1"
+        },
+        {
+          templateItemId: "8c30c206-e38d-4411-85e2-bb187abaa3a4", 
+          status: "fair",
+          notes: "Frontend test 2"
+        }
+      ]
+    };
+
+    console.log('🚀 SENDING REQUEST:');
+    console.log('URL:', `/api/inspections/${id}/complete`);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+
+    const url = `${ENV.API_BASE_URL}/inspections/${id}/complete`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('📥 RESPONSE STATUS:', response.status);
+      console.log('📥 RESPONSE HEADERS:', [...response.headers.entries()]);
+
+      const responseText = await response.text();
+      console.log('📥 RAW RESPONSE TEXT:', responseText);
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('📥 PARSED RESPONSE:', JSON.stringify(result, null, 2));
+      } catch (parseError) {
+        console.error('❌ JSON PARSE ERROR:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      if (!response.ok) {
+        console.error('❌ HTTP ERROR:', result);
+        throw new Error(result.message || `HTTP ${response.status}`);
+      }
+
+      // Check for savedResponses field
+      if (result.savedResponses !== undefined) {
+        console.log(`✅ SUCCESS: ${result.savedResponses} responses saved`);
+      } else {
+        console.warn('⚠️  WARNING: savedResponses field missing from response');
+        console.log('Available fields:', Object.keys(result));
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('❌ COMPLETION ERROR:', error);
+      throw error;
+    }
   }
 
   async deleteInspection(id: string): Promise<void> {
     return this.request<void>(`/inspections/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getDetailedInspection(id: string): Promise<DetailedInspection> {
+    // In development, return mock data
+    if (isDevelopment()) {
+      console.log(`🔄 Using mock detailed inspection data for ID: ${id}`);
+      const basicInspection = mockData.inspections.find(i => i.id === id);
+      if (!basicInspection) {
+        throw new Error('Inspection not found');
+      }
+      
+      // Return mock detailed inspection with template data
+      const mockDetailedInspection: DetailedInspection = {
+        ...basicInspection,
+        template: mockData.templates[0], // Use first template as mock
+        itemResponses: [
+          {
+            id: '1',
+            inspectionId: id,
+            templateItemId: 1,
+            value: 'excellent',
+            notes: 'Sink is in perfect condition',
+            photos: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: '2',
+            inspectionId: id,
+            templateItemId: 2,
+            value: 'working',
+            notes: 'Faucet operates smoothly',
+            photos: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ]
+      };
+      
+      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+      return mockDetailedInspection;
+    }
+    
+    // Call the real backend API
+    const backendResponse = await this.request<any>(`/inspections/${id}/detailed`);
+    
+    // Transform backend response to frontend format
+    const transformedInspection: DetailedInspection = {
+      id: backendResponse.id,
+      propertyId: backendResponse.property_id,
+      inspectorName: backendResponse.inspector_id, // TODO: Look up actual inspector name
+      date: backendResponse.scheduled_date,
+      status: backendResponse.status,
+      type: backendResponse.type,
+      issues: backendResponse.issues || [],
+      notes: backendResponse.notes || '',
+      createdAt: backendResponse.created_at || new Date().toISOString(),
+      updatedAt: backendResponse.updated_at || new Date().toISOString(),
+      templateId: backendResponse.template_id,
+      template: backendResponse.template ? {
+        id: backendResponse.template.id,
+        name: backendResponse.template.name,
+        description: backendResponse.template.description,
+        type: backendResponse.template.type,
+        is_default: backendResponse.template.is_default || false,
+        created_by: backendResponse.template.created_by,
+        created_at: backendResponse.template.created_at,
+        updated_at: backendResponse.template.updated_at,
+        sections: (backendResponse.template.sections || []).map((section: any) => ({
+          id: section.id,
+          template_id: backendResponse.template.id,
+          name: section.name,
+          order_index: section.order_index,
+          description: section.description,
+          created_at: section.created_at,
+          updated_at: section.updated_at,
+          items: (section.items || []).map((item: any) => ({
+            id: item.id,
+            section_id: section.id,
+            name: item.name,
+            type: item.type,
+            required: item.required,
+            order_index: item.order_index,
+            options: item.options,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          }))
+        }))
+      } : undefined,
+      itemResponses: (backendResponse.inspection_results || []).map((result: any) => {
+        // Map backend response fields to frontend format
+        let value = '';
+        if (result.status) value = result.status;
+        else if (result.rating) value = result.rating.toString();
+        else if (result.text_response) value = result.text_response;
+        
+        return {
+          id: result.id,
+          inspectionId: backendResponse.id,
+          templateItemId: result.template_item_id,
+          value,
+          notes: result.notes || '',
+          photos: result.photos || [],
+          createdAt: result.created_at || new Date().toISOString(),
+          updatedAt: result.updated_at || new Date().toISOString()
+        };
+      })
+    };
+    
+    console.log('✅ Transformed detailed inspection:', transformedInspection);
+    return transformedInspection;
   }
 
   // Templates API

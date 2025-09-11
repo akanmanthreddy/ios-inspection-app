@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiClient, Inspection, CreateInspectionData, InspectionIssue, mockData } from '../services/api';
+import { apiClient, Inspection, CreateInspectionData, InspectionIssue, CreateInspectionItemResponse, mockData } from '../services/api';
 
 // Environment detection for browser compatibility
 const isDevelopment = () => {
@@ -18,7 +18,7 @@ export interface UseInspectionsReturn {
   error: string | null;
   createInspection: (data: CreateInspectionData) => Promise<Inspection>;
   updateInspection: (id: string, data: Partial<CreateInspectionData>) => Promise<Inspection>;
-  completeInspection: (id: string, issues: InspectionIssue[], notes?: string) => Promise<Inspection>;
+  completeInspection: (id: string, issues: InspectionIssue[], notes?: string, itemResponses?: CreateInspectionItemResponse[]) => Promise<Inspection>;
   deleteInspection: (id: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -146,7 +146,7 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
     }
   };
 
-  const completeInspection = async (id: string, issues: InspectionIssue[], notes?: string): Promise<Inspection> => {
+  const completeInspection = async (id: string, issues: InspectionIssue[], notes?: string, itemResponses?: CreateInspectionItemResponse[]): Promise<Inspection> => {
     try {
       setError(null);
       
@@ -155,7 +155,7 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       
       if (!isDevelopment()) {
         console.log('🌐 Using API to complete inspection:', id);
-        updatedInspection = await apiClient.completeInspection(id, issues, notes);
+        updatedInspection = await apiClient.completeInspection(id, issues, notes, itemResponses);
       } else {
         console.log('🔄 Using mock completion for inspection:', id);
         // Mock completion for development

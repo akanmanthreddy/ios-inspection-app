@@ -11,6 +11,7 @@ interface MobileInspectionsPageProps {
   inspections: Inspection[];
   loading?: boolean;
   onBack: () => void;
+  onInspectionClick?: (inspection: Inspection) => void;
 }
 
 export function MobileInspectionsPage({
@@ -18,7 +19,8 @@ export function MobileInspectionsPage({
   propertyAddress,
   inspections,
   loading = false,
-  onBack
+  onBack,
+  onInspectionClick
 }: MobileInspectionsPageProps) {
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'scheduled' | 'in-progress' | 'requires-follow-up'>('all');
   const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in'>('all');
@@ -159,19 +161,19 @@ export function MobileInspectionsPage({
             <div className="text-xl font-medium text-primary">
               {inspections.filter(i => i.status === 'completed').length}
             </div>
-            <div className="text-xs text-muted">Completed</div>
+            <div className="text-xs text-slate-600 font-medium">Completed</div>
           </div>
           <div>
             <div className="text-xl font-medium text-secondary">
               {inspections.filter(i => i.status === 'in-progress').length}
             </div>
-            <div className="text-xs text-muted">In Progress</div>
+            <div className="text-xs text-slate-600 font-medium">In Progress</div>
           </div>
           <div>
-            <div className="text-xl font-medium text-muted">
+            <div className="text-xl font-medium text-slate-700">
               {inspections.filter(i => i.status === 'scheduled').length}
             </div>
-            <div className="text-xs text-muted">Scheduled</div>
+            <div className="text-xs text-slate-600 font-medium">Scheduled</div>
           </div>
         </div>
       </div>
@@ -180,15 +182,24 @@ export function MobileInspectionsPage({
       <div className="px-6 py-6">
         {filteredInspections.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-muted mb-2">No inspections found</div>
-            <div className="text-sm text-muted">Try adjusting your filter</div>
+            <div className="text-slate-600 font-medium mb-2">No inspections found</div>
+            <div className="text-sm text-slate-500">Try adjusting your filter</div>
           </div>
         ) : (
           <div className="space-y-4">
             {filteredInspections.map((inspection) => (
               <Card
                 key={inspection.id}
-                className="p-4 border border-border/50 cursor-pointer transition-all duration-200 active:scale-95"
+                className={`p-4 border border-border/50 transition-all duration-200 active:scale-95 ${
+                  inspection.status === 'completed' && onInspectionClick 
+                    ? 'cursor-pointer hover:shadow-md hover:border-primary/20' 
+                    : 'cursor-default'
+                }`}
+                onClick={() => {
+                  if (inspection.status === 'completed' && onInspectionClick) {
+                    onInspectionClick(inspection);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
@@ -197,7 +208,7 @@ export function MobileInspectionsPage({
                       <div className="font-medium text-sm">
                         {getTypeLabel(inspection.type)} Inspection
                       </div>
-                      <div className="flex items-center text-xs text-muted mt-1">
+                      <div className="flex items-center text-xs text-slate-600 mt-1">
                         <Calendar className="w-3 h-3 mr-1" />
                         {inspection.date ? new Date(inspection.date).toLocaleDateString('en-US', {
                           month: 'short',
@@ -212,7 +223,7 @@ export function MobileInspectionsPage({
                   </Badge>
                 </div>
 
-                <div className="flex items-center text-sm text-muted mb-3">
+                <div className="flex items-center text-sm text-slate-600 mb-3">
                   <User className="w-4 h-4 mr-1" />
                   {inspection.inspectorName}
                 </div>
@@ -221,7 +232,7 @@ export function MobileInspectionsPage({
                   <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
                     <div className="text-center">
                       <div className="text-lg font-medium text-red-600">{inspection.issues?.length || 0}</div>
-                      <div className="text-xs text-muted">Issues</div>
+                      <div className="text-xs text-slate-600 font-medium">Issues</div>
                     </div>
                     <div className="text-center">
                       <div className="text-sm font-medium">
@@ -230,14 +241,14 @@ export function MobileInspectionsPage({
                           day: 'numeric'
                         }) : 'N/A'}
                       </div>
-                      <div className="text-xs text-muted">Completed</div>
+                      <div className="text-xs text-slate-600 font-medium">Completed</div>
                     </div>
                   </div>
                 )}
 
                 {inspection.status !== 'completed' && (
                   <div className="pt-3 border-t border-border/30">
-                    <div className="text-sm text-muted text-center">
+                    <div className="text-sm text-slate-600 font-medium text-center">
                       {inspection.status === 'scheduled' ? 'Scheduled' : 
                        inspection.status === 'in-progress' ? 'In Progress' :
                        inspection.status === 'requires-follow-up' ? 'Requires Follow-up' : 
