@@ -155,10 +155,10 @@ export interface CreatePropertyData {
 
 export interface CreateInspectionData {
   propertyId: string;
-  inspectorName: string;
-  scheduledDate: string;
+  inspectorId: string;  // Backend expects inspectorId, not inspectorName
+  scheduledDate: string;  // Backend expects full ISO timestamp
   type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
-  notes?: string;
+  templateId: string | number;  // Backend requires template_id for inspections
 }
 
 // Base API client with error handling
@@ -195,7 +195,14 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        console.error(`❌ API Error Details:`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          method: options.method || 'GET'
+        });
+        throw new Error(errorData.message || `HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -376,9 +383,18 @@ class ApiClient {
   }
 
   async createInspection(data: CreateInspectionData): Promise<Inspection> {
+    // Transform camelCase to snake_case for backend API
+    const backendData = {
+      propertyId: data.propertyId,
+      inspectorId: data.inspectorId,
+      scheduledDate: data.scheduledDate,
+      type: data.type,
+      template_id: data.templateId, // Backend expects template_id not templateId
+    };
+    
     return this.request<Inspection>('/inspections', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(backendData),
     });
   }
 

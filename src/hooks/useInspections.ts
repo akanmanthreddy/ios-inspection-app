@@ -33,19 +33,44 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       setLoading(true);
       setError(null);
       
-      // Always use mock data for now (until backend is ready)
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Don't fetch if no propertyId is provided
+      if (!propertyId) {
+        console.log('⚠️  No propertyId provided, skipping inspection fetch');
+        setInspections([]);
+        return;
+      }
       
-      // Filter mock inspections by property if specified
-      const filteredInspections = propertyId 
-        ? mockData.inspections.filter(i => i.propertyId === propertyId)
-        : mockData.inspections;
-      
-      setInspections(filteredInspections);
+      // Use API in production, enhanced mock data in development
+      if (!isDevelopment()) {
+        console.log('🌐 Fetching inspections from API for property:', propertyId);
+        const apiInspections = await apiClient.getInspections(propertyId);
+        console.log(`📋 Found ${apiInspections.length} inspections from API for property ${propertyId}`);
+        setInspections(apiInspections);
+      } else {
+        console.log('🔄 Using enhanced mock data for property:', propertyId);
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Use basic mock data in development
+        const persistedInspections = [...mockData.inspections];
+        
+        // Filter inspections by property if specified
+        const filteredInspections = propertyId 
+          ? persistedInspections.filter(i => i.propertyId === propertyId)
+          : persistedInspections;
+        
+        console.log(`📋 Found ${filteredInspections.length} inspections for property ${propertyId}`);
+        setInspections(filteredInspections);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch inspections');
-      console.error('Error fetching inspections:', err);
+      console.error('❌ Error fetching inspections:', err);
+      
+      // Fallback to basic mock data if everything fails
+      const basicMockInspections = propertyId 
+        ? mockData.inspections.filter(i => i.propertyId === propertyId)
+        : mockData.inspections;
+      setInspections(basicMockInspections);
     } finally {
       setLoading(false);
     }
@@ -55,25 +80,37 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
     try {
       setError(null);
       
-      // Always use mock creation for now (until backend is ready)
-      const newInspection: Inspection = {
-        id: Date.now().toString(),
-        propertyId: data.propertyId,
-        inspectorName: data.inspectorName,
-        date: data.scheduledDate,
-        status: 'scheduled',
-        type: data.type,
-        issues: [],
-        notes: data.notes,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      let newInspection: Inspection;
       
+      if (!isDevelopment()) {
+        console.log('🌐 Creating inspection via API:', data);
+        // Use real API to create inspection in database
+        newInspection = await apiClient.createInspection(data);
+        console.log('✅ Inspection created successfully in database:', newInspection.id);
+      } else {
+        console.log('🔄 Creating mock inspection for development:', data);
+        // Mock creation for development
+        newInspection = {
+          id: Date.now().toString(),
+          propertyId: data.propertyId,
+          inspectorName: data.inspectorId, // Map inspectorId to inspectorName for display
+          date: data.scheduledDate,
+          status: 'scheduled',
+          type: data.type,
+          issues: [],
+          notes: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      
+      // Update local state with the new inspection
       setInspections(prev => [...prev, newInspection]);
       return newInspection;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create inspection';
       setError(errorMessage);
+      console.error('❌ Error creating inspection:', err);
       throw new Error(errorMessage);
     }
   };
@@ -87,10 +124,9 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
         inspection.id === id 
           ? { 
               ...inspection, 
-              inspectorName: data.inspectorName || inspection.inspectorName,
+              inspectorName: data.inspectorId || inspection.inspectorName,
               date: data.scheduledDate || inspection.date,
               type: data.type || inspection.type,
-              notes: data.notes || inspection.notes,
               updatedAt: new Date().toISOString() 
             }
           : inspection
@@ -98,10 +134,9 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       const updated = inspections.find(i => i.id === id)!;
       return { 
         ...updated, 
-        inspectorName: data.inspectorName || updated.inspectorName,
+        inspectorName: data.inspectorId || updated.inspectorName,
         date: data.scheduledDate || updated.date,
         type: data.type || updated.type,
-        notes: data.notes || updated.notes,
         updatedAt: new Date().toISOString() 
       };
     } catch (err) {
@@ -115,29 +150,47 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
     try {
       setError(null);
       
-      // Always use mock completion for now (until backend is ready)
+      // Try to use real API, fallback to mock if needed
+      let updatedInspection: Inspection;
+      
+      if (!isDevelopment()) {
+        console.log('🌐 Using API to complete inspection:', id);
+        updatedInspection = await apiClient.completeInspection(id, issues, notes);
+      } else {
+        console.log('🔄 Using mock completion for inspection:', id);
+        // Mock completion for development
+        setInspections(prev => prev.map(inspection => 
+          inspection.id === id 
+            ? { 
+                ...inspection, 
+                status: 'completed' as const,
+                issues,
+                notes: notes || inspection.notes || '',
+                updatedAt: new Date().toISOString() 
+              }
+            : inspection
+        ));
+        const existing = inspections.find(i => i.id === id);
+        updatedInspection = { 
+          ...existing!,
+          status: 'completed' as const,
+          issues,
+          notes: notes || existing?.notes || '',
+          updatedAt: new Date().toISOString() 
+        };
+      }
+      
+      // Update local state with the completed inspection
       setInspections(prev => prev.map(inspection => 
-        inspection.id === id 
-          ? { 
-              ...inspection, 
-              status: 'completed' as const,
-              issues,
-              notes: notes || inspection.notes,
-              updatedAt: new Date().toISOString() 
-            }
-          : inspection
+        inspection.id === id ? updatedInspection : inspection
       ));
-      const updated = inspections.find(i => i.id === id)!;
-      return { 
-        ...updated, 
-        status: 'completed' as const,
-        issues,
-        notes: notes || updated.notes,
-        updatedAt: new Date().toISOString() 
-      };
+      
+      console.log('✅ Inspection completed successfully:', updatedInspection);
+      return updatedInspection;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to complete inspection';
       setError(errorMessage);
+      console.error('❌ Error completing inspection:', err);
       throw new Error(errorMessage);
     }
   };

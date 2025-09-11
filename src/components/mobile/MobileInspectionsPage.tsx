@@ -3,84 +3,25 @@ import { ChevronLeft, Calendar, User, CheckCircle, XCircle, Clock, Filter } from
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Inspection } from '../../services/api';
 
 interface MobileInspectionsPageProps {
   propertyId: string;
   propertyAddress: string;
+  inspections: Inspection[];
+  loading?: boolean;
   onBack: () => void;
 }
 
 export function MobileInspectionsPage({
   propertyId,
   propertyAddress,
+  inspections,
+  loading = false,
   onBack
 }: MobileInspectionsPageProps) {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending' | 'in-progress'>('all');
-  const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in' | 'annual'>('all');
-
-  // Mock data - in production this would come from props or hooks
-  const inspections = [
-    {
-      id: '1',
-      date: '2024-01-15',
-      inspector: 'John Smith',
-      type: 'routine',
-      status: 'completed' as const,
-      score: 95,
-      issues: 2,
-      duration: '45 min'
-    },
-    {
-      id: '2',
-      date: '2024-01-12',
-      inspector: 'Sarah Johnson',
-      type: 'maintenance',
-      status: 'completed' as const,
-      score: 88,
-      issues: 5,
-      duration: '60 min'
-    },
-    {
-      id: '3',
-      date: '2024-01-10',
-      inspector: 'Mike Wilson',
-      type: 'move-out',
-      status: 'in-progress' as const,
-      score: null,
-      issues: null,
-      duration: 'In progress'
-    },
-    {
-      id: '4',
-      date: '2024-01-08',
-      inspector: 'Lisa Davis',
-      type: 'routine',
-      status: 'pending' as const,
-      score: null,
-      issues: null,
-      duration: 'Scheduled'
-    },
-    {
-      id: '5',
-      date: '2024-01-05',
-      inspector: 'John Smith',
-      type: 'move-in',
-      status: 'completed' as const,
-      score: 92,
-      issues: 1,
-      duration: '35 min'
-    },
-    {
-      id: '6',
-      date: '2024-01-01',
-      inspector: 'Sarah Johnson',
-      type: 'annual',
-      status: 'completed' as const,
-      score: 89,
-      issues: 3,
-      duration: '90 min'
-    }
-  ];
+  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'scheduled' | 'in-progress' | 'requires-follow-up'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in'>('all');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,8 +29,10 @@ export function MobileInspectionsPage({
         return 'bg-green-500/10 text-green-700 border-green-200';
       case 'in-progress':
         return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
-      case 'pending':
+      case 'scheduled':
         return 'bg-blue-500/10 text-blue-700 border-blue-200';
+      case 'requires-follow-up':
+        return 'bg-red-500/10 text-red-700 border-red-200';
       default:
         return 'bg-gray-500/10 text-gray-700 border-gray-200';
     }
@@ -101,8 +44,10 @@ export function MobileInspectionsPage({
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'in-progress':
         return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'pending':
+      case 'scheduled':
         return <Clock className="w-4 h-4 text-blue-600" />;
+      case 'requires-follow-up':
+        return <XCircle className="w-4 h-4 text-red-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
@@ -158,7 +103,8 @@ export function MobileInspectionsPage({
               { key: 'all', label: 'All' },
               { key: 'completed', label: 'Completed' },
               { key: 'in-progress', label: 'In Progress' },
-              { key: 'pending', label: 'Pending' }
+              { key: 'scheduled', label: 'Scheduled' },
+              { key: 'requires-follow-up', label: 'Follow-up' }
             ].map((filter) => (
               <Button
                 key={filter.key}
@@ -186,8 +132,7 @@ export function MobileInspectionsPage({
               { key: 'routine', label: 'Routine' },
               { key: 'maintenance', label: 'Maintenance' },
               { key: 'move-in', label: 'Move-in' },
-              { key: 'move-out', label: 'Move-out' },
-              { key: 'annual', label: 'Annual' }
+              { key: 'move-out', label: 'Move-out' }
             ].map((filter) => (
               <Button
                 key={filter.key}
@@ -224,9 +169,9 @@ export function MobileInspectionsPage({
           </div>
           <div>
             <div className="text-xl font-medium text-muted">
-              {inspections.filter(i => i.status === 'pending').length}
+              {inspections.filter(i => i.status === 'scheduled').length}
             </div>
-            <div className="text-xs text-muted">Pending</div>
+            <div className="text-xs text-muted">Scheduled</div>
           </div>
         </div>
       </div>
@@ -254,11 +199,11 @@ export function MobileInspectionsPage({
                       </div>
                       <div className="flex items-center text-xs text-muted mt-1">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(inspection.date).toLocaleDateString('en-US', {
+                        {inspection.date ? new Date(inspection.date).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
-                        })}
+                        }) : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -269,22 +214,23 @@ export function MobileInspectionsPage({
 
                 <div className="flex items-center text-sm text-muted mb-3">
                   <User className="w-4 h-4 mr-1" />
-                  {inspection.inspector}
+                  {inspection.inspectorName}
                 </div>
 
                 {inspection.status === 'completed' && (
-                  <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border/30">
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
                     <div className="text-center">
-                      <div className="text-lg font-medium text-green-600">{inspection.score}%</div>
-                      <div className="text-xs text-muted">Score</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-medium text-red-600">{inspection.issues}</div>
+                      <div className="text-lg font-medium text-red-600">{inspection.issues?.length || 0}</div>
                       <div className="text-xs text-muted">Issues</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-sm font-medium">{inspection.duration}</div>
-                      <div className="text-xs text-muted">Duration</div>
+                      <div className="text-sm font-medium">
+                        {inspection.updatedAt ? new Date(inspection.updatedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        }) : 'N/A'}
+                      </div>
+                      <div className="text-xs text-muted">Completed</div>
                     </div>
                   </div>
                 )}
@@ -292,7 +238,10 @@ export function MobileInspectionsPage({
                 {inspection.status !== 'completed' && (
                   <div className="pt-3 border-t border-border/30">
                     <div className="text-sm text-muted text-center">
-                      {inspection.duration}
+                      {inspection.status === 'scheduled' ? 'Scheduled' : 
+                       inspection.status === 'in-progress' ? 'In Progress' :
+                       inspection.status === 'requires-follow-up' ? 'Requires Follow-up' : 
+                       inspection.status}
                     </div>
                   </div>
                 )}

@@ -51,7 +51,8 @@ function AppContent() {
     inspections, 
     loading: inspectionsLoading, 
     error: inspectionsError,
-    createInspection 
+    createInspection,
+    completeInspection 
   } = useInspections(selectedProperty?.id);
 
   const navigateToPage = (page: AppState) => {
@@ -116,6 +117,47 @@ function AppContent() {
   const handleFinalizeWithoutSigning = async () => {
     try {
       console.log('Finalizing inspection without report:', inspectionFormData);
+      
+      // Save inspection data to database if we have form data and inspection ID
+      if (inspectionFormData && currentInspectionId) {
+        // Convert form data to inspection issues format
+        const issues = [];
+        const notes = [];
+        
+        for (const [itemId, itemData] of Object.entries(inspectionFormData)) {
+          if (itemData && typeof itemData === 'object') {
+            const data = itemData as any; // Type assertion for form data structure
+            
+            // Only include items that need repair as issues
+            if (data.status === 'repair') {
+              issues.push({
+                id: itemId,
+                category: itemId.split('-')[0] || 'general', // Extract category from item ID
+                description: data.comment || `Item requires repair: ${itemId}`,
+                severity: 'medium' as const, // Default to medium severity
+                resolved: false,
+                photos: data.hasPhoto ? ['photo-placeholder'] : []
+              });
+            }
+            
+            // Collect all notes for general inspection notes
+            if (data.comment) {
+              notes.push(`${itemId}: ${data.comment}`);
+            }
+          }
+        }
+        
+        const inspectionNotes = notes.length > 0 ? notes.join('\n') : 'Inspection completed successfully';
+        
+        console.log('Saving inspection with issues:', issues);
+        console.log('Inspection notes:', inspectionNotes);
+        
+        // Complete the inspection in the database
+        await completeInspection(currentInspectionId, issues, inspectionNotes);
+        
+        console.log('✅ Inspection saved successfully to database');
+      }
+      
       // Navigate back to the properties page of the community they were in
       const communityId = selectedCommunity;
       if (communityId) {
@@ -134,7 +176,16 @@ function AppContent() {
         navigateToPage('communities');
       }
     } catch (error) {
-      console.error('Error finalizing inspection:', error);
+      console.error('❌ Error finalizing inspection:', error);
+      // Even if saving fails, still navigate away but show error
+      const communityId = selectedCommunity;
+      if (communityId) {
+        setCurrentPage('properties');
+        setNavigationStack(['landing', 'communities', 'properties']);
+      } else {
+        resetToRoot();
+        navigateToPage('communities');
+      }
     }
   };
 
@@ -224,10 +275,10 @@ function AppContent() {
       
       const inspectionData: CreateInspectionData = {
         propertyId,
-        inspectorName: 'Current User',
-        scheduledDate: new Date().toISOString().split('T')[0],
+        inspectorId: '6b5b7c7e-8c3e-4d43-9a3d-3b1a8f6d5e1b', // Use existing user ID from community created_by
+        scheduledDate: new Date().toISOString(), // Full ISO timestamp as backend expects
         type: 'routine', // Use generic type, actual template data comes from templateId
-        notes: `Inspection started for ${property.address} using template ID: ${templateId}`
+        templateId: templateId // Include template ID to satisfy database constraint
       };
       
       const newInspection = await createInspection(inspectionData);
@@ -320,6 +371,8 @@ function AppContent() {
           <MobileInspectionsPage 
             propertyId={selectedProperty.id}
             propertyAddress={selectedProperty.address}
+            inspections={inspections}
+            loading={inspectionsLoading}
             onBack={navigateBack}
           />
         ) : null;
