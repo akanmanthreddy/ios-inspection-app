@@ -240,44 +240,28 @@ export function MobileInspectionsPage({
                       </div>
                     </div>
                   </div>
-                  <Badge className={getStatusColor(inspection.status)}>
-                    {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1).replace('-', ' ')}
-                  </Badge>
+                  <div className="flex flex-col items-end">
+                    <Badge className={getStatusColor(inspection.status)}>
+                      {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1).replace('-', ' ')}
+                    </Badge>
+                    {inspection.status === 'completed' && (
+                      <div className="mt-2 text-sm">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full ${
+                          (inspection.issues?.length || 0) > 0 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {inspection.issues?.length || 0} Repair Item{(inspection.issues?.length || 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center text-sm text-slate-600 mb-3">
+                <div className="flex items-center text-sm text-slate-600">
                   <User className="w-4 h-4 mr-1" />
                   {inspection.inspectorName}
                 </div>
-
-                {inspection.status === 'completed' && (
-                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
-                    <div className="text-center">
-                      <div className="text-lg font-medium text-red-600">{inspection.issues?.length || 0}</div>
-                      <div className="text-xs text-slate-600 font-medium">Issues</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm font-medium">
-                        {inspection.updatedAt ? new Date(inspection.updatedAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        }) : 'N/A'}
-                      </div>
-                      <div className="text-xs text-slate-600 font-medium">Completed</div>
-                    </div>
-                  </div>
-                )}
-
-                {inspection.status !== 'completed' && (
-                  <div className="pt-3 border-t border-border/30">
-                    <div className="text-sm text-slate-600 font-medium text-center">
-                      {inspection.status === 'scheduled' ? 'Scheduled' : 
-                       inspection.status === 'in-progress' ? 'In Progress' :
-                       inspection.status === 'requires-follow-up' ? 'Requires Follow-up' : 
-                       inspection.status}
-                    </div>
-                  </div>
-                )}
               </Card>
             ))}
           </div>

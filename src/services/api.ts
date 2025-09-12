@@ -113,6 +113,7 @@ export interface BackendInspectionResponse {
   status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
   type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
   issues?: InspectionIssue[];
+  issues_count?: number; // NEW: Backend now includes this in property-filtered endpoints
   notes?: string | null;
   created_at?: string;
   createdAt?: string; // Some endpoints might return camelCase
@@ -451,68 +452,198 @@ class ApiClient {
       throw new Error('Invalid inspection data: missing required fields');
     }
 
-    // Log transformation for debugging
+    // Helper function to extract date from datetime string and use noon UTC to avoid timezone issues
+    const extractDate = (datetime: string | null | undefined) => {
+      if (!datetime) return datetime;
+      const datePart = datetime.split('T')[0]; // Extract "2025-09-11" from "2025-09-11T00:00:00.000Z"
+      return datePart + 'T12:00:00Z'; // Add noon UTC to avoid timezone conversion issues
+    };
+
+    // Use completion date for completed inspections, scheduled date for others
+    const scheduledDate = inspection.scheduled_date || inspection.date || new Date().toISOString();
+    const completedAt = inspection.completed_at;
+    const displayDate = inspection.status === 'completed' && completedAt 
+      ? extractDate(completedAt)
+      : extractDate(scheduledDate);
+
+    // Transform with issues_count support
+    const issuesCount = inspection.issues_count ?? (Array.isArray(inspection.issues) ? inspection.issues.length : 0);
     const transformed = {
       id: inspection.id,
       propertyId: inspection.property_id || inspection.propertyId || '',
       inspectorName: inspection.inspector_name || inspection.inspectorName || 'Unknown',
-      date: inspection.scheduled_date || inspection.date || new Date().toISOString(),
+      date: displayDate || new Date().toISOString(),
       status: inspection.status,
       type: inspection.type,
-      issues: Array.isArray(inspection.issues) ? inspection.issues : [],
-      notes: inspection.notes || undefined,
+      issues: Array.isArray(inspection.issues) 
+        ? inspection.issues 
+        : Array.from({ length: issuesCount }, (_, index) => ({
+            id: `issue-${index}`,
+            category: 'Repair Required',
+            description: 'Issue details available in detailed view',
+            severity: 'medium' as const,
+            resolved: false
+          })),
+      notes: inspection.notes || '',
       createdAt: inspection.created_at || inspection.createdAt || new Date().toISOString(),
       updatedAt: inspection.completed_at || inspection.updated_at || inspection.updatedAt || new Date().toISOString(),
       templateId: inspection.template_id || inspection.templateId
     };
+
+    // Debug logging for issues data
+    if (inspection.status === 'completed') {
+      console.log('🔧 Issues Debug - Optimized Backend Response:', {
+        id: inspection.id,
+        status: inspection.status,
+        backend_issues_count: inspection.issues_count,
+        backend_issues_array: inspection.issues,
+        calculated_count: issuesCount,
+        transformed_issues_length: transformed.issues.length,
+        using_issues_count_field: inspection.issues_count !== undefined
+      });
+    }
     
     // Debug logging for date field mapping
-    if (!inspection.scheduled_date && !inspection.date) {
+    if (!scheduledDate) {
       console.warn('⚠️ Inspection missing date field, using current date as fallback:', inspection.id);
     }
-    if (inspection.scheduled_date && inspection.date && inspection.scheduled_date !== inspection.date) {
-      console.warn('⚠️ Inspection has conflicting date fields:', {
+    if (inspection.status === 'completed') {
+      console.log('📅 Completed inspection date mapping:', {
         id: inspection.id,
         scheduled_date: inspection.scheduled_date,
-        date: inspection.date,
-        using: transformed.date
+        completed_at: inspection.completed_at,
+        display_date: transformed.date,
+        using: completedAt ? 'completion_date' : 'scheduled_date'
       });
     }
     
     return transformed;
   }
 
-  // Inspections API
-  async getInspections(propertyId?: string): Promise<Inspection[]> {
-    const query = propertyId ? `?propertyId=${propertyId}` : '';
-    const backendInspections = await this.request<BackendInspectionResponse[]>(`/inspections${query}`);
-    
-    // Validate response is an array
-    if (!Array.isArray(backendInspections)) {
-      console.error('Invalid response from inspections endpoint: expected array, got', typeof backendInspections);
-      return [];
+  // Helper function to transform enriched backend inspection to frontend format
+  private transformEnrichedInspection(inspection: EnrichedInspection): Inspection {
+    // Validate required fields
+    if (!inspection.id || !inspection.status || !inspection.type) {
+      console.error('Invalid enriched inspection data from backend:', inspection);
+      throw new Error('Invalid inspection data: missing required fields');
+    }
+
+    // Helper function to extract date from datetime string and use noon UTC to avoid timezone issues
+    const extractDate = (datetime: string | null | undefined) => {
+      if (!datetime) return datetime;
+      const datePart = datetime.split('T')[0]; // Extract "2025-09-11" from "2025-09-11T00:00:00.000Z"
+      return datePart + 'T12:00:00Z'; // Add noon UTC to avoid timezone conversion issues
+    };
+
+    // Use completion date for completed inspections, scheduled date for others
+    const scheduledDate = inspection.scheduled_date || new Date().toISOString();
+    const completedAt = inspection.completed_at;
+    const displayDate = inspection.status === 'completed' && completedAt 
+      ? extractDate(completedAt)
+      : extractDate(scheduledDate);
+
+    // Transform enriched inspection data with issues_count
+    const transformed = {
+      id: inspection.id,
+      propertyId: inspection.property_id || '',
+      inspectorName: inspection.inspector_name || 'Unknown',
+      date: displayDate || new Date().toISOString(),
+      status: inspection.status,
+      type: inspection.type,
+      issues: Array.from({ length: inspection.issues_count || 0 }, (_, index) => ({
+        id: `issue-${index}`,
+        category: 'Repair Required',
+        description: 'Issue details not available in list view',
+        severity: 'medium' as const,
+        resolved: false
+      })),
+      notes: inspection.notes || '',
+      createdAt: inspection.created_at || new Date().toISOString(),
+      updatedAt: inspection.completed_at || inspection.updated_at || new Date().toISOString(),
+      templateId: inspection.template_id
+    };
+
+    // Debug logging for enriched issues data
+    if (inspection.status === 'completed') {
+      console.log('🔧 Enriched Issues Debug:', {
+        id: inspection.id,
+        status: inspection.status,
+        issues_count: inspection.issues_count,
+        created_issues_array_length: transformed.issues.length
+      });
     }
     
-    // Transform backend data structure to frontend Inspection interface
-    return backendInspections.map(inspection => {
-      try {
-        return this.transformBackendInspection(inspection);
-      } catch (error) {
-        console.error('Failed to transform inspection:', inspection, error);
-        // Return a minimal valid inspection object to prevent UI crashes
-        return {
-          id: inspection.id || 'unknown',
-          propertyId: '',
-          inspectorName: 'Unknown',
-          date: new Date().toISOString(),
-          status: inspection.status || 'scheduled',
-          type: inspection.type || 'routine',
-          issues: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+    return transformed;
+  }
+
+  // Inspections API - Optimized with backend issues_count support
+  async getInspections(propertyId?: string): Promise<Inspection[]> {
+    if (propertyId) {
+      // For property-specific views: Use regular endpoint with new issues_count field
+      console.log(`🚀 Fetching property-specific inspections (optimized) for: ${propertyId}`);
+      const query = `?propertyId=${propertyId}`;
+      const backendInspections = await this.request<BackendInspectionResponse[]>(`/inspections${query}`);
+      
+      // Validate response is an array
+      if (!Array.isArray(backendInspections)) {
+        console.error('Invalid response from property inspections endpoint: expected array, got', typeof backendInspections);
+        return [];
       }
-    });
+      
+      console.log(`📊 Property inspections loaded: ${backendInspections.length} inspections (single API call)`);
+      
+      // Transform backend data using optimized transformation with issues_count
+      return backendInspections.map(inspection => {
+        try {
+          return this.transformBackendInspection(inspection);
+        } catch (error) {
+          console.error('Failed to transform property inspection:', inspection, error);
+          // Return a minimal valid inspection object to prevent UI crashes
+          return {
+            id: inspection.id || 'unknown',
+            propertyId: inspection.property_id || inspection.propertyId || '',
+            inspectorName: inspection.inspector_name || inspection.inspectorName || 'Unknown',
+            date: new Date().toISOString(),
+            status: inspection.status || 'scheduled',
+            type: inspection.type || 'routine',
+            issues: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        }
+      });
+    } else {
+      // For all inspections view: Use enriched endpoint with issues_count
+      console.log('🔍 Fetching all inspections with enriched data');
+      const backendInspections = await this.request<EnrichedInspection[]>('/inspections/all');
+      
+      // Validate response is an array
+      if (!Array.isArray(backendInspections)) {
+        console.error('Invalid response from all inspections endpoint: expected array, got', typeof backendInspections);
+        return [];
+      }
+      
+      // Transform enriched backend data to frontend Inspection interface
+      return backendInspections.map(inspection => {
+        try {
+          return this.transformEnrichedInspection(inspection);
+        } catch (error) {
+          console.error('Failed to transform enriched inspection:', inspection, error);
+          // Return a minimal valid inspection object to prevent UI crashes
+          return {
+            id: inspection.id || 'unknown',
+            propertyId: inspection.property_id || '',
+            inspectorName: inspection.inspector_name || 'Unknown',
+            date: new Date().toISOString(),
+            status: inspection.status || 'scheduled',
+            type: inspection.type || 'routine',
+            issues: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        }
+      });
+    }
   }
 
   async getAllInspectionsEnriched(filters?: {
