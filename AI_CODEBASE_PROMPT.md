@@ -1,4 +1,4 @@
-# Haven Realty Inspection App - AI Development Context
+I# Haven Realty Inspection App - AI Development Context
 
 ## 🏠 Application Overview
 

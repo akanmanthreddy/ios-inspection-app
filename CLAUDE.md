@@ -67,7 +67,7 @@ Before: GET /inspections?propertyId=X → (missing issues_count) → N detail ca
 After:  GET /inspections?propertyId=X → (includes issues_count) → Transform → Fast, accurate
 ```
 
-**Commit:** `TBD` - "Optimize inspection API performance and fix repair items count display"
+**Commit:** `a6624fb` - "Optimize inspection API performance and fix repair items count display"
 
 ### Previous Updates (Session 9)
 

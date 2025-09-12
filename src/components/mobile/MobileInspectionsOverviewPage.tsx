@@ -229,11 +229,11 @@ export function MobileInspectionsOverviewPage({
                     {inspection.status === 'completed' && (
                       <div className="mt-2 text-sm">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full ${
-                          inspection.issues > 0 
+                          (inspection.issues || 0) > 0 
                             ? 'bg-red-100 text-red-800' 
                             : 'bg-green-100 text-green-800'
                         }`}>
-                          {inspection.issues} Repair Item{inspection.issues !== 1 ? 's' : ''}
+                          {inspection.issues || 0} Repair Item{(inspection.issues || 0) !== 1 ? 's' : ''}
                         </span>
                       </div>
                     )}

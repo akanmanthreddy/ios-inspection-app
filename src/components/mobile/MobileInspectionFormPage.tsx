@@ -176,6 +176,17 @@ export function MobileInspectionFormPage({
     return mockInspectionSections;
   }, [shouldFetchTemplate, template, templateLoading, templateError, mockInspectionSections]);
 
+  // Create mapping between item IDs and their section titles for issue categorization
+  const itemToSectionMapping = useMemo(() => {
+    const mapping: Record<string, string> = {};
+    inspectionSections.forEach(section => {
+      section.items.forEach(item => {
+        mapping[item.id] = section.title;
+      });
+    });
+    return mapping;
+  }, [inspectionSections]);
+
   const totalItems = inspectionSections.reduce((total, section) => 
     total + section.items.length, 0
   );
@@ -334,13 +345,14 @@ export function MobileInspectionFormPage({
   };
 
   const handleSubmit = () => {
-    // Include photos in the form data
+    // Include photos and section mapping in the form data
     const submissionData = {
       ...formData,
-      photos: itemPhotos
+      photos: itemPhotos,
+      _sectionMapping: itemToSectionMapping // Add section mapping for issue categorization
     };
     
-    console.log('Submitting inspection with photos:', submissionData);
+    console.log('Submitting inspection with photos and section mapping:', submissionData);
     onComplete(submissionData);
   };
 
