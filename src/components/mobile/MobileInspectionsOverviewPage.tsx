@@ -219,12 +219,25 @@ export function MobileInspectionsOverviewPage({
                     <p className="text-sm text-slate-600 mb-1">{inspection.community}</p>
                     <p className="text-xs text-slate-700 font-medium">{inspection.inspectionType}</p>
                   </div>
-                  <Badge className={getStatusColor(inspection.status)}>
-                    <div className="flex items-center">
-                      {getStatusIcon(inspection.status)}
-                      <span className="ml-1 capitalize">{inspection.status.replace('-', ' ')}</span>
-                    </div>
-                  </Badge>
+                  <div className="flex flex-col items-end">
+                    <Badge className={getStatusColor(inspection.status)}>
+                      <div className="flex items-center">
+                        {getStatusIcon(inspection.status)}
+                        <span className="ml-1 capitalize">{inspection.status.replace('-', ' ')}</span>
+                      </div>
+                    </Badge>
+                    {inspection.status === 'completed' && (
+                      <div className="mt-2 text-sm">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full ${
+                          inspection.issues > 0 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {inspection.issues} Repair Item{inspection.issues !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between text-sm text-slate-600">
@@ -238,14 +251,6 @@ export function MobileInspectionsOverviewPage({
                   </div>
                   <div>Inspector: {inspection.inspector}</div>
                 </div>
-
-                {inspection.issues > 0 && (
-                  <div className="mt-2 text-sm">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-orange-800">
-                      {inspection.issues} issue{inspection.issues !== 1 ? 's' : ''} found
-                    </span>
-                  </div>
-                )}
               </Card>
             ))}
           </div>
