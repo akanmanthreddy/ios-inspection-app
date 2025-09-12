@@ -167,21 +167,23 @@ function AppContent() {
         
         // Step 2: Convert form data to inspection issues format
         const issues = [];
-        const notes = [];
         const itemResponses: CreateInspectionItemResponse[] = [];
+        
+        // Get section mapping for proper issue categorization
+        const sectionMapping = (inspectionFormData._sectionMapping || {}) as Record<string, string>;
         
         for (const [itemId, itemData] of Object.entries(inspectionFormData)) {
           if (itemData && typeof itemData === 'object') {
             const data = itemData as any; // Type assertion for form data structure
             
-            // Skip photos metadata - we only want actual template item responses
-            if (itemId === 'photos') continue;
+            // Skip photos metadata and section mapping - we only want actual template item responses
+            if (itemId === 'photos' || itemId === '_sectionMapping') continue;
             
             // Only include items that need repair as issues
             if (data.status === 'repair') {
               issues.push({
                 id: itemId,
-                category: itemId.split('-')[0] || 'general', // Extract category from item ID
+                category: sectionMapping[itemId] || 'General', // Use section title as category
                 description: data.comment || `Item requires repair: ${itemId}`,
                 severity: 'medium' as const, // Default to medium severity
                 resolved: false,
@@ -234,14 +236,15 @@ function AppContent() {
               itemResponses.push(response);
             }
             
-            // Collect all notes for general inspection notes
-            if (data.comment) {
-              notes.push(`${itemId}: ${data.comment}`);
-            }
+            // NOTE: Individual item comments should NOT be included in general inspection notes
+            // They are already properly stored in itemResponses[].notes
+            // General inspection notes should only contain inspection-level observations
           }
         }
         
-        const inspectionNotes = notes.length > 0 ? notes.join('\n') : 'Inspection completed successfully';
+        // General inspection notes should only contain inspection-level observations
+        // Individual item responses are stored separately in itemResponses[].notes
+        const inspectionNotes = 'Inspection completed successfully';
         
         console.log('🔍 Raw inspection form data:', inspectionFormData);
         console.log('💾 Saving inspection with issues:', issues);
