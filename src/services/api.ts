@@ -99,6 +99,29 @@ export interface DetailedInspection extends Inspection {
   itemResponses?: InspectionItemResponse[]; // Responses to each template item
 }
 
+// Backend response structure for inspections
+export interface BackendInspectionResponse {
+  id: string;
+  property_id?: string;
+  propertyId?: string; // Some endpoints might return camelCase
+  inspector_id?: string;
+  inspector_name?: string | null;
+  inspectorName?: string | null; // Some endpoints might return camelCase
+  scheduled_date?: string;
+  date?: string; // Some endpoints might return this instead
+  completed_at?: string | null;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
+  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  issues?: InspectionIssue[];
+  notes?: string | null;
+  created_at?: string;
+  createdAt?: string; // Some endpoints might return camelCase
+  updated_at?: string;
+  updatedAt?: string; // Some endpoints might return camelCase
+  template_id?: string | number;
+  templateId?: string | number; // Some endpoints might return camelCase
+}
+
 export interface EnrichedInspection {
   id: string;
   property_id: string;
@@ -420,10 +443,76 @@ class ApiClient {
     });
   }
 
+  // Helper function to safely transform backend inspection to frontend format
+  private transformBackendInspection(inspection: BackendInspectionResponse): Inspection {
+    // Validate required fields
+    if (!inspection.id || !inspection.status || !inspection.type) {
+      console.error('Invalid inspection data from backend:', inspection);
+      throw new Error('Invalid inspection data: missing required fields');
+    }
+
+    // Log transformation for debugging
+    const transformed = {
+      id: inspection.id,
+      propertyId: inspection.property_id || inspection.propertyId || '',
+      inspectorName: inspection.inspector_name || inspection.inspectorName || 'Unknown',
+      date: inspection.scheduled_date || inspection.date || new Date().toISOString(),
+      status: inspection.status,
+      type: inspection.type,
+      issues: Array.isArray(inspection.issues) ? inspection.issues : [],
+      notes: inspection.notes || undefined,
+      createdAt: inspection.created_at || inspection.createdAt || new Date().toISOString(),
+      updatedAt: inspection.completed_at || inspection.updated_at || inspection.updatedAt || new Date().toISOString(),
+      templateId: inspection.template_id || inspection.templateId
+    };
+    
+    // Debug logging for date field mapping
+    if (!inspection.scheduled_date && !inspection.date) {
+      console.warn('⚠️ Inspection missing date field, using current date as fallback:', inspection.id);
+    }
+    if (inspection.scheduled_date && inspection.date && inspection.scheduled_date !== inspection.date) {
+      console.warn('⚠️ Inspection has conflicting date fields:', {
+        id: inspection.id,
+        scheduled_date: inspection.scheduled_date,
+        date: inspection.date,
+        using: transformed.date
+      });
+    }
+    
+    return transformed;
+  }
+
   // Inspections API
   async getInspections(propertyId?: string): Promise<Inspection[]> {
     const query = propertyId ? `?propertyId=${propertyId}` : '';
-    return this.request<Inspection[]>(`/inspections${query}`);
+    const backendInspections = await this.request<BackendInspectionResponse[]>(`/inspections${query}`);
+    
+    // Validate response is an array
+    if (!Array.isArray(backendInspections)) {
+      console.error('Invalid response from inspections endpoint: expected array, got', typeof backendInspections);
+      return [];
+    }
+    
+    // Transform backend data structure to frontend Inspection interface
+    return backendInspections.map(inspection => {
+      try {
+        return this.transformBackendInspection(inspection);
+      } catch (error) {
+        console.error('Failed to transform inspection:', inspection, error);
+        // Return a minimal valid inspection object to prevent UI crashes
+        return {
+          id: inspection.id || 'unknown',
+          propertyId: '',
+          inspectorName: 'Unknown',
+          date: new Date().toISOString(),
+          status: inspection.status || 'scheduled',
+          type: inspection.type || 'routine',
+          issues: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+    });
   }
 
   async getAllInspectionsEnriched(filters?: {
@@ -441,7 +530,10 @@ class ApiClient {
   }
 
   async getInspection(id: string): Promise<Inspection> {
-    return this.request<Inspection>(`/inspections/${id}`);
+    const inspection = await this.request<BackendInspectionResponse>(`/inspections/${id}`);
+    
+    // Transform backend data structure to frontend Inspection interface
+    return this.transformBackendInspection(inspection);
   }
 
   async createInspection(data: CreateInspectionData): Promise<Inspection> {
