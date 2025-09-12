@@ -25,7 +25,8 @@ export function MobileStartInspectionPage({
   preSelectedCommunity,
   preSelectedProperty
 }: MobileStartInspectionPageProps) {
-  const [selectedCommunity, setSelectedCommunity] = useState<string>(preSelectedCommunity || '');
+  // Local state for community to prevent controlled/uncontrolled conflicts
+  const [localCommunity, setLocalCommunity] = useState<string>(preSelectedCommunity || '');
   const [selectedProperty, setSelectedProperty] = useState<string>(preSelectedProperty?.id || '');
   const [selectedTemplate, setSelectedTemplate] = useState<string | number | null>(null);
 
@@ -35,25 +36,33 @@ export function MobileStartInspectionPage({
   // Determine if we're in pre-filled mode (coming from a specific property)
   const isPreFilled = preSelectedCommunity && preSelectedProperty;
 
+  // Sync local community state with parent when pre-selected changes
+  useEffect(() => {
+    setLocalCommunity(preSelectedCommunity || '');
+  }, [preSelectedCommunity]);
+
   // Set default template selection
   useEffect(() => {
     if (templates.length > 0 && selectedTemplate === null) {
       const defaultTemplate = templates.find(t => t.is_default) || templates[0];
-      setSelectedTemplate(defaultTemplate.id);
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate.id);
+      }
     }
   }, [templates, selectedTemplate]);
 
   const handleCommunityChange = (communityId: string) => {
-    setSelectedCommunity(communityId);
+    setLocalCommunity(communityId); // Update local state immediately for responsive UI
     setSelectedProperty(''); // Reset property when community changes
-    onCommunityChange(communityId);
+    onCommunityChange(communityId); // Notify parent to update its state
   };
 
-  const isFormValid = selectedCommunity && selectedProperty && selectedTemplate !== null;
+  // Use localCommunity for validation since it reflects the actual selected value
+  const isFormValid = localCommunity && selectedProperty && selectedTemplate !== null;
 
   const handleStartInspection = () => {
-    if (isFormValid && selectedTemplate !== null) {
-      onStartInspection(selectedCommunity, selectedProperty, selectedTemplate);
+    if (isFormValid && selectedTemplate !== null && localCommunity) {
+      onStartInspection(localCommunity, selectedProperty, selectedTemplate);
     }
   };
 
@@ -98,11 +107,11 @@ export function MobileStartInspectionPage({
           {isPreFilled ? (
             <div className="w-full p-3 bg-muted/20 border border-border/50 rounded-md">
               <span className="text-foreground">
-                {communities.find(c => c.id === selectedCommunity)?.name || 'Unknown Community'}
+                {communities.find(c => c.id === preSelectedCommunity)?.name || 'Unknown Community'}
               </span>
             </div>
           ) : (
-            <Select value={selectedCommunity} onValueChange={handleCommunityChange}>
+            <Select value={localCommunity} onValueChange={handleCommunityChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choose a community..." />
               </SelectTrigger>
@@ -140,10 +149,10 @@ export function MobileStartInspectionPage({
             <Select 
               value={selectedProperty} 
               onValueChange={setSelectedProperty}
-              disabled={!selectedCommunity}
+              disabled={!localCommunity}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={selectedCommunity ? "Choose a property..." : "Select community first"} />
+                <SelectValue placeholder={localCommunity ? "Choose a property..." : "Select community first"} />
               </SelectTrigger>
               <SelectContent>
                 {properties.map((property) => (
@@ -198,15 +207,15 @@ export function MobileStartInspectionPage({
         </Card>
 
         {/* Selected Summary */}
-        {(selectedCommunity || selectedProperty || selectedTemplate !== null) && (
+        {(localCommunity || selectedProperty || selectedTemplate !== null) && (
           <Card className="p-6 bg-muted/10 border-muted/20">
             <h3 className="font-medium mb-3">Inspection Summary</h3>
             <div className="space-y-2 text-sm">
-              {selectedCommunity && (
+              {localCommunity && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Community:</span>
                   <span className="font-medium">
-                    {communities.find(c => c.id === selectedCommunity)?.name || 'Unknown'}
+                    {communities.find(c => c.id === localCommunity)?.name || 'Unknown'}
                   </span>
                 </div>
               )}
