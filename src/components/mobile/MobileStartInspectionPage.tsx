@@ -13,7 +13,7 @@ interface MobileStartInspectionPageProps {
   properties: Array<{ id: string; address: string; unitNumber?: string; }>;
   onCommunityChange: (communityId: string) => void;
   preSelectedCommunity?: string;
-  preSelectedProperty?: { id: string; address: string; };
+  preSelectedProperty?: { id: string; address: string; } | undefined;
 }
 
 export function MobileStartInspectionPage({
@@ -40,6 +40,18 @@ export function MobileStartInspectionPage({
   useEffect(() => {
     setLocalCommunity(preSelectedCommunity || '');
   }, [preSelectedCommunity]);
+
+  // Set default community selection if no pre-selected community and communities are available
+  useEffect(() => {
+    if (!preSelectedCommunity && communities.length > 0 && !localCommunity) {
+      const defaultCommunity = communities[0]; // Select first community as default
+      if (defaultCommunity) {
+        setLocalCommunity(defaultCommunity.id);
+        onCommunityChange(defaultCommunity.id); // Notify parent immediately
+      }
+    }
+  }, [communities, preSelectedCommunity, localCommunity, onCommunityChange]);
+
 
   // Set default template selection
   useEffect(() => {
@@ -107,13 +119,13 @@ export function MobileStartInspectionPage({
           {isPreFilled ? (
             <div className="w-full p-3 bg-muted/20 border border-border/50 rounded-md">
               <span className="text-foreground">
-                {communities.find(c => c.id === preSelectedCommunity)?.name || 'Unknown Community'}
+                {communities.find(c => c.id === localCommunity)?.name || 'Unknown Community'}
               </span>
             </div>
           ) : (
             <Select value={localCommunity} onValueChange={handleCommunityChange}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose a community..." />
+                <SelectValue placeholder="Loading communities..." />
               </SelectTrigger>
               <SelectContent>
                 {communities.map((community) => (
@@ -149,10 +161,10 @@ export function MobileStartInspectionPage({
             <Select 
               value={selectedProperty} 
               onValueChange={setSelectedProperty}
-              disabled={!localCommunity}
+              disabled={!localCommunity || properties.length === 0}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={localCommunity ? "Choose a property..." : "Select community first"} />
+                <SelectValue placeholder="Choose a property..." />
               </SelectTrigger>
               <SelectContent>
                 {properties.map((property) => (

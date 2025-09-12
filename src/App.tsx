@@ -605,7 +605,7 @@ function AppContent() {
             properties={selectedCommunityForInspection ? (properties || []) : []}
             onCommunityChange={handleCommunityChangeForInspection}
             preSelectedCommunity={selectedCommunityForInspection || ''}
-            preSelectedProperty={selectedProperty || { id: '', address: '' }}
+            preSelectedProperty={selectedProperty || undefined}
           />
         );
 
