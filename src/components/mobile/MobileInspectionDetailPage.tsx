@@ -1,9 +1,10 @@
 import React from 'react';
-import { ChevronLeft, Calendar, User, CheckCircle, XCircle, Star, AlertTriangle, Camera } from 'lucide-react';
+import { ChevronLeft, Calendar, User, CheckCircle, XCircle, Star, Camera } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Inspection, DetailedInspection } from '../../services/api';
+import { UnifiedInspectionCard } from './UnifiedInspectionCard';
 
 interface MobileInspectionDetailPageProps {
   inspection: Inspection | DetailedInspection;
@@ -44,30 +45,8 @@ export function MobileInspectionDetailPage({
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return 'bg-red-500/10 text-red-700 border-red-300';
-      case 'high':
-        return 'bg-orange-500/10 text-orange-700 border-orange-300';
-      case 'medium':
-        return 'bg-yellow-500/10 text-yellow-700 border-yellow-300';
-      case 'low':
-        return 'bg-blue-500/10 text-blue-700 border-blue-300';
-      default:
-        return 'bg-gray-500/10 text-gray-700 border-gray-300';
-    }
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-      case 'high':
-        return <AlertTriangle className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
+  // Removed unused functions getSeverityColor and getSeverityIcon 
+  // (now handled in UnifiedInspectionCard component)
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -123,7 +102,7 @@ export function MobileInspectionDetailPage({
                 <span className="text-sm font-medium">{inspection.inspectorName}</span>
               </div>
             </div>
-            <div>
+            <div className="text-center">
               <div className="text-sm text-slate-600 font-medium">Repair Items</div>
               <div className="text-2xl font-bold text-red-600 mt-1">
                 {inspection.issues?.length || 0}
@@ -141,101 +120,15 @@ export function MobileInspectionDetailPage({
           )}
         </Card>
 
-        {/* Issues Section */}
-        {inspection.issues && inspection.issues.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Repair Items ({inspection.issues.length})</h3>
-            <div className="space-y-4">
-              {inspection.issues.map((issue, index) => (
-                <Card key={issue.id} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        {getSeverityIcon(issue.severity)}
-                        <h4 className="font-medium text-sm ml-2">{issue.category}</h4>
-                      </div>
-                      <p className="text-sm text-slate-600 mb-3">{issue.description}</p>
-                    </div>
-                    <Badge className={getSeverityColor(issue.severity)}>
-                      {issue.severity.charAt(0).toUpperCase() + issue.severity.slice(1)}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                    <div className="flex items-center">
-                      {issue.resolved ? (
-                        <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600 mr-2" />
-                      )}
-                      <span className="text-xs text-slate-600 font-medium">
-                        {issue.resolved ? 'Resolved' : 'Unresolved'}
-                      </span>
-                    </div>
-                    
-                    {issue.photos && issue.photos.length > 0 && (
-                      <div className="flex items-center text-xs text-slate-600">
-                        <Camera className="w-3 h-3 mr-1" />
-                        {issue.photos.length} photo{issue.photos.length !== 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Photo thumbnails */}
-                  {issue.photos && issue.photos.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-border/30">
-                      <div className="text-xs text-slate-600 font-medium mb-2">Photos</div>
-                      <div className="flex space-x-2 overflow-x-auto pb-2">
-                        {issue.photos.map((photo, photoIndex) => (
-                          <div 
-                            key={photoIndex} 
-                            className="flex-shrink-0 w-16 h-16 rounded-lg cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border border-slate-200"
-                            onClick={() => {
-                              // TODO: Implement photo viewer
-                              console.log('View photo:', photo);
-                            }}
-                          >
-                            <img 
-                              src={photo} 
-                              alt={`Issue photo ${photoIndex + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback to camera icon if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                const container = target.parentElement;
-                                if (container) {
-                                  container.innerHTML = '<div class="w-full h-full bg-slate-200 flex items-center justify-center"><svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>';
-                                }
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* No Issues State */}
-        {(!inspection.issues || inspection.issues.length === 0) && (
-          <Card className="p-8 text-center">
-            <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-green-700 mb-2">No Repair Items Found</h3>
-            <p className="text-sm text-slate-600">
-              This inspection was completed with no issues identified.
-            </p>
-          </Card>
-        )}
+        {/* Unified Repair Items Card */}
+        <UnifiedInspectionCard inspection={inspection} />
 
         {/* Inspection Sections and Items */}
-        {(inspection as DetailedInspection).template && (inspection as DetailedInspection).template.sections && (
+        {(inspection as DetailedInspection).template && (inspection as DetailedInspection).template?.sections && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Inspection Details</h3>
             <div className="space-y-6">
-              {(inspection as DetailedInspection).template.sections
+              {(inspection as DetailedInspection).template?.sections
                 .sort((a, b) => a.order_index - b.order_index)
                 .map((section) => (
                   <Card key={section.id} className="p-4">
