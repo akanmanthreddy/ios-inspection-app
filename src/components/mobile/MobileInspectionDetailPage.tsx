@@ -124,7 +124,7 @@ export function MobileInspectionDetailPage({
               </div>
             </div>
             <div>
-              <div className="text-sm text-slate-600 font-medium">Issues Found</div>
+              <div className="text-sm text-slate-600 font-medium">Repair Items</div>
               <div className="text-2xl font-bold text-red-600 mt-1">
                 {inspection.issues?.length || 0}
               </div>
@@ -144,7 +144,7 @@ export function MobileInspectionDetailPage({
         {/* Issues Section */}
         {inspection.issues && inspection.issues.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold mb-4">Issues Found ({inspection.issues.length})</h3>
+            <h3 className="text-lg font-semibold mb-4">Repair Items ({inspection.issues.length})</h3>
             <div className="space-y-4">
               {inspection.issues.map((issue, index) => (
                 <Card key={issue.id} className="p-4">
@@ -223,7 +223,7 @@ export function MobileInspectionDetailPage({
         {(!inspection.issues || inspection.issues.length === 0) && (
           <Card className="p-8 text-center">
             <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-green-700 mb-2">No Issues Found</h3>
+            <h3 className="text-lg font-semibold text-green-700 mb-2">No Repair Items Found</h3>
             <p className="text-sm text-slate-600">
               This inspection was completed with no issues identified.
             </p>

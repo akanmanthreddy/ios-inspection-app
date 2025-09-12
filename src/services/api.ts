@@ -820,7 +820,7 @@ class ApiClient {
     const transformedInspection: DetailedInspection = {
       id: backendResponse.id,
       propertyId: backendResponse.property_id,
-      inspectorName: backendResponse.inspector_id, // TODO: Look up actual inspector name
+      inspectorName: backendResponse.inspector_name || backendResponse.inspector_id || 'Unknown',
       date: backendResponse.scheduled_date,
       status: backendResponse.status,
       type: backendResponse.type,
