@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, Calendar, User, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Inspection } from '../../services/api';
 
 interface MobileInspectionsPageProps {
@@ -22,8 +23,11 @@ export function MobileInspectionsPage({
   onBack,
   onInspectionClick
 }: MobileInspectionsPageProps) {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'scheduled' | 'in-progress' | 'requires-follow-up'>('all');
-  const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in'>('all');
+  type FilterStatus = 'all' | 'completed' | 'scheduled' | 'in-progress' | 'requires-follow-up';
+  type FilterType = 'all' | Inspection['type'];
+  
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [filterType, setFilterType] = useState<FilterType>('all');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -72,6 +76,15 @@ export function MobileInspectionsPage({
     }
   };
 
+  // Memoize unique types calculation with null handling
+  const availableTypes = useMemo(() => {
+    return Array.from(new Set(
+      inspections
+        .map(i => i.type)
+        .filter(type => type != null) // Remove null/undefined values
+    ));
+  }, [inspections]);
+
   const filteredInspections = inspections.filter(inspection => {
     const matchesStatus = filterStatus === 'all' || inspection.status === filterStatus;
     const matchesType = filterType === 'all' || inspection.type === filterType;
@@ -97,84 +110,93 @@ export function MobileInspectionsPage({
           </div>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="mb-3">
-          <p className="text-primary-foreground/80 text-sm mb-2">Filter by Status</p>
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'completed', label: 'Completed' },
-              { key: 'in-progress', label: 'In Progress' },
-              { key: 'scheduled', label: 'Scheduled' },
-              { key: 'requires-follow-up', label: 'Follow-up' }
-            ].map((filter) => (
-              <Button
-                key={filter.key}
-                size="sm"
-                variant={filterStatus === filter.key ? "secondary" : "ghost"}
-                onClick={() => setFilterStatus(filter.key as any)}
-                className={`whitespace-nowrap ${
-                  filterStatus === filter.key 
-                    ? "bg-primary-foreground/20 text-primary-foreground" 
-                    : "hover:bg-primary-foreground/10 text-primary-foreground/70"
-                }`}
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </div>
-        </div>
 
-        {/* Type Filter Tabs */}
+        {/* Dynamic Type Filter Dropdown */}
         <div>
           <p className="text-primary-foreground/80 text-sm mb-2">Filter by Type</p>
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {[
-              { key: 'all', label: 'All Types' },
-              { key: 'routine', label: 'Routine' },
-              { key: 'maintenance', label: 'Maintenance' },
-              { key: 'move-in', label: 'Move-in' },
-              { key: 'move-out', label: 'Move-out' }
-            ].map((filter) => (
-              <Button
-                key={filter.key}
-                size="sm"
-                variant={filterType === filter.key ? "secondary" : "ghost"}
-                onClick={() => setFilterType(filter.key as any)}
-                className={`whitespace-nowrap ${
-                  filterType === filter.key 
-                    ? "bg-primary-foreground/20 text-primary-foreground" 
-                    : "hover:bg-primary-foreground/10 text-primary-foreground/70"
-                }`}
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </div>
+          <Select value={filterType} onValueChange={(value: FilterType) => setFilterType(value)}>
+            <SelectTrigger className="w-full min-h-[44px] bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground focus:ring-primary-foreground/30">
+              <SelectValue placeholder="Select inspection type" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border">
+              <SelectItem value="all" className="focus:bg-accent focus:text-accent-foreground">
+                All Types
+              </SelectItem>
+              {availableTypes.length > 0 ? (
+                availableTypes.map(type => (
+                  <SelectItem 
+                    key={type} 
+                    value={type}
+                    className="focus:bg-accent focus:text-accent-foreground"
+                  >
+                    {getTypeLabel(type)}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled className="text-muted-foreground">
+                  No inspection types available
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Clickable Summary Stats Filters */}
       <div className="px-6 py-4 bg-card border-b">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-xl font-medium text-primary">
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            onClick={() => setFilterStatus('all')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center transition-all ${
+              filterStatus === 'all' 
+                ? 'bg-primary/10 border-2 border-primary' 
+                : 'bg-background border-2 border-border/30 hover:border-border/50'
+            }`}
+          >
+            <div className="text-lg font-medium text-slate-700">
+              {inspections.length}
+            </div>
+            <div className="text-xs text-slate-600 font-medium">All</div>
+          </button>
+          <button
+            onClick={() => setFilterStatus('completed')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center transition-all ${
+              filterStatus === 'completed' 
+                ? 'bg-green-50 border-2 border-green-500' 
+                : 'bg-background border-2 border-border/30 hover:border-border/50'
+            }`}
+          >
+            <div className="text-lg font-medium text-green-600">
               {inspections.filter(i => i.status === 'completed').length}
             </div>
             <div className="text-xs text-slate-600 font-medium">Completed</div>
-          </div>
-          <div>
-            <div className="text-xl font-medium text-secondary">
+          </button>
+          <button
+            onClick={() => setFilterStatus('in-progress')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center transition-all ${
+              filterStatus === 'in-progress' 
+                ? 'bg-yellow-50 border-2 border-yellow-500' 
+                : 'bg-background border-2 border-border/30 hover:border-border/50'
+            }`}
+          >
+            <div className="text-lg font-medium text-yellow-600">
               {inspections.filter(i => i.status === 'in-progress').length}
             </div>
             <div className="text-xs text-slate-600 font-medium">In Progress</div>
-          </div>
-          <div>
-            <div className="text-xl font-medium text-slate-700">
+          </button>
+          <button
+            onClick={() => setFilterStatus('scheduled')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center transition-all ${
+              filterStatus === 'scheduled' 
+                ? 'bg-blue-50 border-2 border-blue-500' 
+                : 'bg-background border-2 border-border/30 hover:border-border/50'
+            }`}
+          >
+            <div className="text-lg font-medium text-blue-600">
               {inspections.filter(i => i.status === 'scheduled').length}
             </div>
             <div className="text-xs text-slate-600 font-medium">Scheduled</div>
-          </div>
+          </button>
         </div>
       </div>
 

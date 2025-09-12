@@ -2,35 +2,49 @@
 
 ## 🏠 Application Overview
 
-**Haven Realty Inspection App** is a mobile-first web application built for property inspections in real estate communities. Despite the repository name "ios-inspection-app", this is actually a React/TypeScript web application optimized for mobile devices, not a native iOS app.
+**Haven Realty Inspection App** is a hybrid mobile application built for property inspections in real estate communities. Originally a React/TypeScript web application, it now uses Capacitor to deploy as a native iOS app while maintaining web-based development.
 
 ### Core Purpose
 - **Primary Function**: Property inspection management for real estate communities
 - **Target Users**: Property inspectors, real estate professionals
-- **Platform**: Mobile-optimized web application (React/TypeScript)
-- **Deployment**: Vite-based build system with potential for PWA capabilities
+- **Platform**: Hybrid mobile app (React + Capacitor for iOS deployment)
+- **Deployment**: Capacitor-based iOS app with Vite build system
+- **Brand Colors**: Custom brand identity (#1b365d, #4698cb, #768692, #FFFFFF)
+- **Typography**: Inter font family (professional design)
 
 ## 📱 Technology Stack
 
 ### Frontend Framework
 - **React 18.2.0** with TypeScript
 - **Vite** for build tooling and development server
-- **Tailwind CSS v4.0.0-alpha.25** for styling
+- **Tailwind CSS v3.4** for styling (downgraded from v4 alpha for stability)
 - **Radix UI** components for accessible UI primitives
+- **Capacitor v7** for iOS deployment (hybrid mobile app framework)
 
 ### Key Dependencies
 ```json
 {
   "react": "^18.2.0",
   "react-dom": "^18.2.0",
-  "lucide-react": "latest", // Icons
-  "recharts": "latest", // Charts/data visualization
-  "react-hook-form": "7.55.0", // Form handling
+  "lucide-react": "^0.400.0", // Icons
   "sonner": "2.0.3", // Toast notifications
-  "motion": "latest", // Animations
-  "@radix-ui/*": "latest" // UI components
+  "@radix-ui/react-dialog": "^1.1.15", // Modal components
+  "@radix-ui/react-select": "^2.2.6", // Dropdown components
+  "@radix-ui/react-radio-group": "^1.3.8", // Selection components
+  "@radix-ui/react-collapsible": "^1.0.3", // Expandable sections
+  "@capacitor/core": "^7.4.3", // Mobile app framework
+  "@capacitor/ios": "^7.4.3", // iOS platform
+  "@capacitor/camera": "^7.0.2", // Camera functionality
+  "tailwind-merge": "^2.0.0", // CSS utility merging
+  "class-variance-authority": "^0.7.0" // Component variants
 }
 ```
+
+### Removed Dependencies (Cleaned Up)
+- `recharts` - Charts/data visualization (removed for lean build)
+- `react-hook-form` - Form handling (removed, using native forms)
+- `framer-motion` - Animations (removed for performance)
+- Various unused UI libraries and utilities
 
 ### Development Tools
 - **TypeScript 5.2.2**
@@ -257,11 +271,14 @@ The app recently underwent major cleanup removing:
 
 ### Available Scripts
 ```bash
-npm run dev        # Start development server
-npm run build      # Build for production (TypeScript + Vite)
-npm run preview    # Preview production build
-npm run lint       # ESLint with TypeScript rules
-npm run type-check # TypeScript type checking
+npm run dev           # Start development server (iPhone-like container for testing)
+npm run build         # Build for production (TypeScript + Vite)
+npm run preview       # Preview production build
+npm run lint          # ESLint with TypeScript rules
+npm run type-check    # TypeScript type checking
+npm run build:mobile  # Build and sync for Capacitor mobile
+npm run ios:dev       # Open in Xcode simulator
+npm run ios:run       # Run on connected iOS device
 ```
 
 ### Development Environment
@@ -302,15 +319,84 @@ npm run type-check # TypeScript type checking
 
 ---
 
+## 🎨 Brand Design System
+
+### Brand Colors (Company Manual)
+```css
+:root {
+  --brand-primary: #1b365d;    /* Dark Navy - Headers, primary buttons */
+  --brand-secondary: #4698cb;  /* Medium Blue - Accent elements */
+  --brand-neutral: #768692;    /* Neutral Gray - Muted text (35% lightness) */
+  --brand-white: #FFFFFF;      /* White - Backgrounds, light text */
+}
+```
+
+### Typography
+- **Primary Font**: Inter (professional alternative to NEUZ EIT GROTESK)
+- **Font Weights**: 300, 400, 500, 600, 700 available
+- **Implementation**: Google Fonts import with fallbacks
+
+### Design System Implementation
+- **Tailwind CSS Variables**: All brand colors mapped to CSS custom properties
+- **Semantic Color Tokens**: `text-muted-foreground`, `bg-primary`, `text-secondary`
+- **Global Consistency**: Applied across all mobile components
+- **Accessibility**: 35% lightness for muted text ensures readability
+
+## 📱 Development Container
+
+### iPhone Testing Container
+```typescript
+// App.tsx - iPhone-like display container for development
+<div className="min-h-screen bg-gray-100 flex items-start justify-center">
+  <div className="w-full max-w-sm bg-background min-h-screen shadow-xl">
+    {/* App content */}
+  </div>
+</div>
+```
+
+**Features:**
+- Max-width: 384px (iPhone-like dimensions)
+- Centered in browser with gray background
+- Shadow effect for realistic mobile frame
+- Maintains responsive design for actual deployment
+
+## 🔧 Capacitor Configuration
+
+### iOS Deployment Setup
+```typescript
+// capacitor.config.ts
+const config: CapacitorConfig = {
+  appId: 'com.havenrealty.inspection',
+  appName: 'Haven Realty Inspection',
+  webDir: 'dist',
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: '#1b365d' // Brand primary color
+    }
+  }
+};
+```
+
 ## 🤖 For AI Assistants: Key Reminders
 
-1. **This is NOT a native iOS app** - it's a React web app optimized for mobile
-2. **Always use mock data patterns** when adding new features
-3. **Follow the custom hooks pattern** for data fetching
-4. **Mobile-first mindset** - design for touch interfaces
-5. **Maintain TypeScript strict typing** throughout
-6. **Use existing UI components** from the `/ui` directory
-7. **Follow the established navigation patterns** in `App.tsx`
-8. **Test on mobile viewports** - this app is not intended for desktop
+1. **Hybrid Mobile App** - React web app deployed via Capacitor to iOS
+2. **Brand Consistency** - Always use the company brand colors (#1b365d, #4698cb, #768692)
+3. **Use text-muted-foreground** - Never use `text-muted` (non-existent class)
+4. **Follow Radix UI patterns** - Functional components with proper accessibility
+5. **iPhone development container** - App displays in mobile-sized container during dev
+6. **Capacitor mobile scripts** - Use `npm run build:mobile` for iOS deployment
+7. **Typography**: Inter font family, professional and accessible
+8. **Mobile-first design** - Touch-optimized, single-hand navigation
+9. **TypeScript strict** - Maintain full type safety
+10. **Use existing UI components** from `/ui` directory with proper Radix implementations
 
-This codebase is well-structured, modern, and ready for continued development. The cleanup has left a focused, maintainable application with clear patterns for expansion.
+### Recent Major Updates
+- ✅ **Capacitor Integration**: Full iOS deployment capability
+- ✅ **Brand Design System**: Company colors and typography implemented  
+- ✅ **UI Component Restoration**: Functional Radix UI components (Select, RadioGroup, Dialog)
+- ✅ **Text Readability**: Improved contrast with darker muted text
+- ✅ **Development Experience**: iPhone-like container for accurate testing
+- ✅ **Codebase Cleanup**: 74% reduction, lean and focused architecture
+
+This codebase is production-ready for iOS deployment with professional branding, excellent functionality, and modern development practices.

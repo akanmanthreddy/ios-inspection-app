@@ -31,9 +31,20 @@ export function MobilePropertiesPage({
 
   // Helper functions to map backend data to display format
   const getPropertyStatus = (property: any) => {
-    if (!property.last_inspection) return 'Needs Inspection';
-    if (property.next_inspection && new Date(property.next_inspection) < new Date()) return 'Needs Inspection';
-    return 'Ready';
+    // Use the actual property status from database
+    if (!property.status) return 'Unknown';
+    
+    // Format status to be human-readable
+    switch (property.status) {
+      case 'active':
+        return 'Active';
+      case 'under-construction':
+        return 'Under Construction';
+      case 'sold':
+        return 'Sold';
+      default:
+        return property.status.charAt(0).toUpperCase() + property.status.slice(1);
+    }
   };
 
   const formatPropertyType = (type: string | null) => {
@@ -85,12 +96,14 @@ export function MobilePropertiesPage({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Ready':
+      case 'Active':
         return 'bg-green-500/10 text-green-700 border-green-200';
-      case 'Needs Inspection':
-        return 'bg-red-500/10 text-red-700 border-red-200';
-      case 'In Progress':
+      case 'Under Construction':
         return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
+      case 'Sold':
+        return 'bg-blue-500/10 text-blue-700 border-blue-200';
+      case 'Unknown':
+        return 'bg-gray-500/10 text-muted-foreground border-gray-200';
       default:
         return 'bg-gray-500/10 text-muted-foreground border-gray-200';
     }
@@ -192,9 +205,6 @@ export function MobilePropertiesPage({
                     <span className="font-medium text-sm text-muted-foreground">{formatPropertyType(property.property_type)}</span>
                   </div>
                   <h3 className="font-medium text-base mb-2">{property.address}</h3>
-                  <div className="flex items-center text-sm text-muted-foreground mb-2">
-                    <span>Issues: {property.issues_count}</span>
-                  </div>
                 </div>
                 <Badge className={getStatusColor(getPropertyStatus(property))}>
                   {getPropertyStatus(property)}

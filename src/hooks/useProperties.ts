@@ -33,6 +33,14 @@ export function useProperties(communityId?: string): UsePropertiesReturn {
       setLoading(true);
       setError(null);
       
+      // Don't fetch if no communityId is provided
+      if (!communityId) {
+        console.log('⚠️  No communityId provided, skipping properties fetch');
+        setProperties([]);
+        return;
+      }
+      
+      console.log('🌐 Fetching properties for community:', communityId);
       // Use the API client which handles fallback to mock data automatically
       const data = await apiClient.getProperties(communityId);
       setProperties(data);
