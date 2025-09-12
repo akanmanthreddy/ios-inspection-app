@@ -211,21 +211,15 @@ export function MobilePropertiesPage({
                 </Badge>
               </div>
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                <div className="flex items-center">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Last: {property.last_inspection 
-                    ? new Date(property.last_inspection).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric'
-                      })
-                    : 'Never'
-                  }
-                </div>
-                <div>Created: {new Date(property.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric'
-                })}</div>
+              <div className="flex items-center text-sm text-muted-foreground mb-4">
+                <Calendar className="w-4 h-4 mr-1" />
+                Last: {property.last_inspection 
+                  ? new Date(property.last_inspection.split('T')[0] + 'T12:00:00Z').toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                  : 'Never'
+                }
               </div>
 
               {/* Action Buttons */}
