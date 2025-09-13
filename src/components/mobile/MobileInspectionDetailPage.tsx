@@ -152,9 +152,6 @@ export function MobileInspectionDetailPage({
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
                                   <h5 className="font-medium text-sm mb-1">{item.name}</h5>
-                                  {item.required && (
-                                    <Badge variant="outline" className="text-xs">Required</Badge>
-                                  )}
                                 </div>
                                 
                                 {response?.value && (

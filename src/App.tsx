@@ -19,6 +19,7 @@ import { Toaster } from './components/ui/sonner';
 import { useCommunities } from './hooks/useCommunities';
 import { useProperties } from './hooks/useProperties';
 import { useInspections } from './hooks/useInspections';
+import { useTemplates } from './hooks/useTemplates';
 import { CreateInspectionData, CreateInspectionItemResponse, apiClient } from './services/api';
 import { PhotoUploadService } from './services/photoUpload';
 import { PhotoData } from './types';
@@ -58,6 +59,12 @@ function AppContent() {
     createInspection,
     completeInspection 
   } = useInspections(selectedProperty?.id);
+
+  const { 
+    templates,
+    loading: templatesLoading,
+    error: templatesError
+  } = useTemplates();
 
   const navigateToPage = (page: AppState) => {
     setNavigationStack(prev => [...prev, page]);
@@ -415,11 +422,15 @@ function AppContent() {
       // Store the selected template ID for the inspection form
       setSelectedInspectionTemplate(templateId);
       
+      // Find the selected template to get its type
+      const selectedTemplate = templates.find(t => t.id.toString() === templateId.toString());
+      const inspectionType = selectedTemplate?.type || 'routine'; // fallback to 'routine' if template not found
+      
       const inspectionData: CreateInspectionData = {
         propertyId,
         inspectorId: '6b5b7c7e-8c3e-4d43-9a3d-3b1a8f6d5e1b', // Use existing user ID from community created_by
         scheduledDate: new Date().toISOString(), // Full ISO timestamp as backend expects
-        type: 'routine', // Use generic type, actual template data comes from templateId
+        type: inspectionType, // Use the actual template type instead of hardcoded 'routine'
         templateId: templateId // Include template ID to satisfy database constraint
       };
       

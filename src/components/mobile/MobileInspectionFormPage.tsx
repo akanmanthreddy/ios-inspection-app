@@ -81,7 +81,7 @@ export function MobileInspectionFormPage({
   };
 
   // Mock inspection template data - used as fallback when no template provided or while loading
-  const mockInspectionSections = [
+  const mockInspectionSections = useMemo(() => [
     {
       id: 'kitchen-appliances',
       title: 'Kitchen - Appliances',
@@ -161,7 +161,7 @@ export function MobileInspectionFormPage({
         { id: 'window-locks', label: 'Window Locks', type: 'good-fair-repair' as const }
       ]
     }
-  ];
+  ], []);
 
   // Choose between live template data and mock data
   const inspectionSections = useMemo(() => {
@@ -174,7 +174,7 @@ export function MobileInspectionFormPage({
     // Fallback to mock data
     console.log('Using mock inspection data');
     return mockInspectionSections;
-  }, [shouldFetchTemplate, template, templateLoading, templateError, mockInspectionSections]);
+  }, [shouldFetchTemplate, template, templateLoading, templateError]);
 
   // Create mapping between item IDs and their section titles for issue categorization
   const itemToSectionMapping = useMemo(() => {

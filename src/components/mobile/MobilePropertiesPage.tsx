@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Home, Calendar, FileText, PlayCircle, Search, X, BarChart3 } from 'lucide-react';
+import { ChevronLeft, Home, Calendar, FileText, PlayCircle, Search, X, BarChart3 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -23,7 +23,6 @@ export function MobilePropertiesPage({
   onViewReports,
   onStartInspection
 }: MobilePropertiesPageProps) {
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Use real API data via the hook
