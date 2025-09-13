@@ -41,7 +41,6 @@ export class CameraService {
               }
             };
             
-            console.log('✅ Web photo selected:', photoData.id);
             resolve(photoData);
           };
           
@@ -73,15 +72,7 @@ export class CameraService {
     };
 
     try {
-      console.log('📸 Taking photo with options:', defaultOptions);
       const image: Photo = await Camera.getPhoto(defaultOptions);
-      console.log('📷 Camera returned image:', { 
-        path: image.path, 
-        webPath: image.webPath, 
-        hasBase64: !!image.base64String,
-        width: image.width,
-        height: image.height 
-      });
       
       const photoData: PhotoData = {
         id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -95,7 +86,6 @@ export class CameraService {
         }
       };
 
-      console.log('✅ Photo captured successfully:', photoData.id, photoData.uri);
       return photoData;
       
     } catch (error) {
@@ -130,7 +120,6 @@ export class CameraService {
         }
       };
 
-      console.log('Photo selected from gallery:', photoData.id);
       return photoData;
       
     } catch (error) {
@@ -145,7 +134,6 @@ export class CameraService {
   static async choosePhoto(options: CameraOptions = {}): Promise<PhotoData> {
     // Check if running in web browser - use web fallback
     if (Capacitor.getPlatform() === 'web') {
-      console.log('🌐 Running in web browser - using file input fallback');
       return this.selectPhotoWeb();
     }
 
@@ -157,7 +145,6 @@ export class CameraService {
     };
 
     try {
-      console.log('📸 Using native Capacitor camera');
       const image: Photo = await Camera.getPhoto(defaultOptions);
       
       const photoData: PhotoData = {
@@ -172,7 +159,6 @@ export class CameraService {
         }
       };
 
-      console.log('Photo chosen:', photoData.id);
       return photoData;
       
     } catch (error) {
@@ -187,7 +173,6 @@ export class CameraService {
   static async checkPermissions() {
     try {
       const permissions = await Camera.checkPermissions();
-      console.log('Camera permissions:', permissions);
       return permissions;
     } catch (error) {
       console.error('Error checking camera permissions:', error);
@@ -201,7 +186,6 @@ export class CameraService {
   static async requestPermissions() {
     try {
       const permissions = await Camera.requestPermissions();
-      console.log('Camera permissions requested:', permissions);
       return permissions;
     } catch (error) {
       console.error('Error requesting camera permissions:', error);

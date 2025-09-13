@@ -108,7 +108,6 @@ export function MobilePropertyReportsPage({
 
   const handleViewReport = (reportId: string) => {
     // In a real app, this would download or open the report
-    console.log('Viewing report:', reportId);
     alert(`Opening report ${reportId}...`);
   };
 

@@ -53,10 +53,6 @@ export function MobileInspectionFormPage({
   // Debug logging for template data
   useEffect(() => {
     if (shouldFetchTemplate) {
-      console.log('Inspection Form - Template ID:', templateId);
-      console.log('Inspection Form - Template Loading:', templateLoading);
-      console.log('Inspection Form - Template Data:', template);
-      console.log('Inspection Form - Template Error:', templateError);
     }
   }, [templateId, templateLoading, template, templateError, shouldFetchTemplate]);
 
@@ -169,12 +165,10 @@ export function MobileInspectionFormPage({
   const inspectionSections = useMemo(() => {
     // Use live template data if available and loaded
     if (shouldFetchTemplate && template && !templateLoading && !templateError) {
-      console.log('Using live template data:', template.name);
       return convertTemplateToInspectionSections(template);
     }
     
     // Fallback to mock data
-    console.log('Using mock inspection data');
     return mockInspectionSections;
   }, [shouldFetchTemplate, template, templateLoading, templateError]);
 
@@ -233,8 +227,6 @@ export function MobileInspectionFormPage({
 
   const handleCameraClick = useCallback(async (itemId: string) => {
     try {
-      console.log('🎯 Camera button clicked for item:', itemId);
-      console.log('📱 Using choosePhoto method (will prompt user)');
       
       // Set loading state for this specific item and clear any previous errors
       setLoadingCameraForItem(itemId);
@@ -250,7 +242,6 @@ export function MobileInspectionFormPage({
       });
       
       if (photo) {
-        console.log('📸 Photo received:', photo);
         
         // Add photo to item's photo collection
         setItemPhotos(prev => {
@@ -258,7 +249,6 @@ export function MobileInspectionFormPage({
             ...prev,
             [itemId]: [...(prev[itemId] || []), photo]
           };
-          console.log('📊 Updated item photos:', updated);
           return updated;
         });
         
@@ -267,9 +257,7 @@ export function MobileInspectionFormPage({
         updateFormData(itemId, 'hasPhoto', true);
         updateFormData(itemId, 'photoCount', newPhotoCount);
         
-        console.log('✅ Photo captured successfully for item:', itemId, 'Photo ID:', photo.id, 'New count:', newPhotoCount);
       } else {
-        console.log('❌ No photo received (user cancelled or error)');
         // Don't show error for user cancellation - this is expected behavior
       }
     } catch (error) {
@@ -354,7 +342,6 @@ export function MobileInspectionFormPage({
       _sectionMapping: itemToSectionMapping // Add section mapping for issue categorization
     };
     
-    console.log('Submitting inspection with photos and section mapping:', submissionData);
     onComplete(submissionData);
   };
 

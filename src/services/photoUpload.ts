@@ -36,7 +36,6 @@ export class PhotoUploadService {
     options: PhotoUploadOptions
   ): Promise<PhotoUploadResult> {
     try {
-      console.log('📤 Starting backend photo upload:', photoData.id);
       
       // Convert photo data to uploadable format
       const { blob, filename } = await this.preparePhotoForUpload(photoData, options);
@@ -50,7 +49,6 @@ export class PhotoUploadService {
 
       // Upload to backend API
       const uploadUrl = `${ENV.API_BASE_URL}${this.UPLOAD_ENDPOINT}`;
-      console.log('📤 Uploading to:', uploadUrl);
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -63,7 +61,6 @@ export class PhotoUploadService {
 
       const result = await response.json();
       
-      console.log('✅ Photo uploaded to backend:', result.url);
 
       return {
         url: result.url,
@@ -93,13 +90,11 @@ export class PhotoUploadService {
     const results: PhotoUploadResult[] = [];
     const errors: Error[] = [];
 
-    console.log(`📤 Uploading ${photos.length} photos to backend for item ${options.itemId}`);
 
     for (const photo of photos) {
       try {
         const result = await this.uploadPhoto(photo, options);
         results.push(result);
-        console.log(`✅ Photo uploaded successfully: ${result.url}`);
       } catch (error) {
         console.error(`❌ Failed to upload photo ${photo.id}:`, error);
         errors.push(error instanceof Error ? error : new Error('Unknown upload error'));
@@ -184,10 +179,8 @@ export class PhotoUploadService {
    */
   static async deletePhoto(photoId: string): Promise<boolean> {
     try {
-      console.log('🗑️ Deleting photo via backend:', photoId);
       
       const deleteUrl = `${ENV.API_BASE_URL}/photos/${photoId}`;
-      console.log('🗑️ Deleting from:', deleteUrl);
       
       const response = await fetch(deleteUrl, {
         method: 'DELETE'
@@ -197,7 +190,6 @@ export class PhotoUploadService {
         throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
       }
       
-      console.log('✅ Photo deleted successfully');
       return true;
     } catch (error) {
       console.error('❌ Failed to delete photo:', error);

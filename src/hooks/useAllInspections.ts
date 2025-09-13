@@ -11,14 +11,11 @@ const shouldUseMockData = async () => {
     } as any);
     
     if (response.ok) {
-      console.log('🌐 Backend API is available - using real data');
       return false; // Use real API
     } else {
-      console.log('🔄 Backend API not responding - using mock data');
       return true; // Use mock data
     }
   } catch (error) {
-    console.log('🔄 Backend API unreachable - using mock data:', error);
     return true; // Use mock data
   }
 };
@@ -55,15 +52,12 @@ export function useAllInspections(): UseAllInspectionsReturn {
       setError(null);
       
       // TEMP: Force API usage to debug connection issues
-      console.log('🔧 DEBUG: Attempting to connect to backend API...');
       
       if (true) { // Temporarily force API usage
-        console.log('🌐 Fetching all inspections from new enriched API endpoint');
         
         try {
           // Use the new enriched endpoint that includes property and community data
           const enrichedInspections = await apiClient.getAllInspectionsEnriched();
-          console.log(`📋 Found ${enrichedInspections.length} enriched inspections from API`);
           
           // Transform enriched API data to overview format
           const transformedInspections: InspectionOverviewItem[] = enrichedInspections.map(inspection => {
@@ -94,14 +88,12 @@ export function useAllInspections(): UseAllInspectionsReturn {
             };
           });
           
-          console.log(`✅ Transformed ${transformedInspections.length} inspections for overview`);
           setInspections(transformedInspections);
         } catch (apiError) {
           console.error('❌ API call failed, falling back to mock data:', apiError);
           throw apiError; // This will trigger the catch block below
         }
       } else {
-        console.log('🔄 Using enhanced mock data for all inspections');
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
@@ -174,7 +166,6 @@ export function useAllInspections(): UseAllInspectionsReturn {
           }
         ];
         
-        console.log(`📋 Using ${mockOverviewInspections.length} mock inspections`);
         setInspections(mockOverviewInspections);
       }
     } catch (err) {

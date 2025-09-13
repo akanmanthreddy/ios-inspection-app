@@ -35,19 +35,15 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       
       // Don't fetch if no propertyId is provided
       if (!propertyId) {
-        console.log('⚠️  No propertyId provided, skipping inspection fetch');
         setInspections([]);
         return;
       }
       
       // Use API in production, enhanced mock data in development
       if (!isDevelopment()) {
-        console.log('🌐 Fetching inspections from API for property:', propertyId);
         const apiInspections = await apiClient.getInspections(propertyId);
-        console.log(`📋 Found ${apiInspections.length} inspections from API for property ${propertyId}`);
         setInspections(apiInspections);
       } else {
-        console.log('🔄 Using enhanced mock data for property:', propertyId);
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
@@ -59,7 +55,6 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
           ? persistedInspections.filter(i => i.propertyId === propertyId)
           : persistedInspections;
         
-        console.log(`📋 Found ${filteredInspections.length} inspections for property ${propertyId}`);
         setInspections(filteredInspections);
       }
     } catch (err) {
@@ -83,12 +78,9 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       let newInspection: Inspection;
       
       if (!isDevelopment()) {
-        console.log('🌐 Creating inspection via API:', data);
         // Use real API to create inspection in database
         newInspection = await apiClient.createInspection(data);
-        console.log('✅ Inspection created successfully in database:', newInspection.id);
       } else {
-        console.log('🔄 Creating mock inspection for development:', data);
         // Mock creation for development
         newInspection = {
           id: Date.now().toString(),
@@ -154,10 +146,8 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
       let updatedInspection: Inspection;
       
       if (!isDevelopment()) {
-        console.log('🌐 Using API to complete inspection:', id);
         updatedInspection = await apiClient.completeInspection(id, issues, notes, itemResponses);
       } else {
-        console.log('🔄 Using mock completion for inspection:', id);
         // Mock completion for development
         setInspections(prev => prev.map(inspection => 
           inspection.id === id 
@@ -185,7 +175,6 @@ export function useInspections(propertyId?: string): UseInspectionsReturn {
         inspection.id === id ? updatedInspection : inspection
       ));
       
-      console.log('✅ Inspection completed successfully:', updatedInspection);
       return updatedInspection;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to complete inspection';

@@ -5,27 +5,21 @@ import { ENV, isSupabaseConfigured } from '../config/env';
 // Environment detection for browser compatibility
 const isDevelopment = () => {
   try {
-    console.log('🔧 Debug - ENV.API_BASE_URL:', ENV.API_BASE_URL);
-    console.log('🔧 Debug - All ENV:', ENV);
     
     // Force production mode if API_BASE_URL is configured and not localhost
     if (ENV.API_BASE_URL && !ENV.API_BASE_URL.includes('localhost')) {
-      console.log('🌐 Using PRODUCTION mode - API calls will go to:', ENV.API_BASE_URL);
       return false;
     }
     
     // If API_BASE_URL contains localhost, check if it's actually running
     if (ENV.API_BASE_URL && ENV.API_BASE_URL.includes('localhost')) {
-      console.log('🔧 Local API configured - will try API first, fallback to mock if needed');
       return false; // Try API first
     }
     
     // Default fallback
-    console.log('🔧 No API configured - using mock data');
     return true;
   } catch {
     // Fallback to mock mode if window is not available
-    console.log('🔧 Fallback to mock data mode');
     return true;
   }
 };
@@ -241,7 +235,6 @@ class ApiClient {
   ): Promise<T> {
     // In development without backend, use mock data
     if (isDevelopment()) {
-      console.log(`🔄 Using mock data for ${endpoint}`);
       return this.getMockResponse<T>(endpoint, options.method);
     }
 
@@ -262,7 +255,6 @@ class ApiClient {
     };
 
     try {
-      console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -278,11 +270,9 @@ class ApiClient {
       }
 
       const data = await response.json();
-      console.log(`✅ API Success: ${endpoint}`, data);
       return data;
     } catch (error) {
       console.error(`❌ API request failed for ${endpoint}:`, error);
-      console.log('Falling back to mock data...');
       // Fallback to mock data if API fails
       return this.getMockResponse<T>(endpoint, options.method);
     }
@@ -492,30 +482,13 @@ class ApiClient {
 
     // Debug logging for issues data
     if (inspection.status === 'completed') {
-      console.log('🔧 Issues Debug - Optimized Backend Response:', {
-        id: inspection.id,
-        status: inspection.status,
-        backend_issues_count: inspection.issues_count,
-        backend_issues_array: inspection.issues,
-        calculated_count: issuesCount,
-        transformed_issues_length: transformed.issues.length,
-        using_issues_count_field: inspection.issues_count !== undefined
-      });
     }
     
     // Debug logging for date field mapping
     if (!scheduledDate) {
       console.warn('⚠️ Inspection missing date field, using current date as fallback:', inspection.id);
     }
-    if (inspection.status === 'completed') {
-      console.log('📅 Completed inspection date mapping:', {
-        id: inspection.id,
-        scheduled_date: inspection.scheduled_date,
-        completed_at: inspection.completed_at,
-        display_date: transformed.date,
-        using: completedAt ? 'completion_date' : 'scheduled_date'
-      });
-    }
+    // Note: Using completion date for completed inspections when available
     
     return transformed;
   }
@@ -563,15 +536,6 @@ class ApiClient {
       templateId: inspection.template_id
     };
 
-    // Debug logging for enriched issues data
-    if (inspection.status === 'completed') {
-      console.log('🔧 Enriched Issues Debug:', {
-        id: inspection.id,
-        status: inspection.status,
-        issues_count: inspection.issues_count,
-        created_issues_array_length: transformed.issues.length
-      });
-    }
     
     return transformed;
   }
@@ -580,8 +544,7 @@ class ApiClient {
   async getInspections(propertyId?: string): Promise<Inspection[]> {
     if (propertyId) {
       // For property-specific views: Use regular endpoint with new issues_count field
-      console.log(`🚀 Fetching property-specific inspections (optimized) for: ${propertyId}`);
-      const query = `?propertyId=${propertyId}`;
+        const query = `?propertyId=${propertyId}`;
       const backendInspections = await this.request<BackendInspectionResponse[]>(`/inspections${query}`);
       
       // Validate response is an array
@@ -590,8 +553,7 @@ class ApiClient {
         return [];
       }
       
-      console.log(`📊 Property inspections loaded: ${backendInspections.length} inspections (single API call)`);
-      
+        
       // Transform backend data using optimized transformation with issues_count
       return backendInspections.map(inspection => {
         try {
@@ -614,8 +576,7 @@ class ApiClient {
       });
     } else {
       // For all inspections view: Use enriched endpoint with issues_count
-      console.log('🔍 Fetching all inspections with enriched data');
-      const backendInspections = await this.request<EnrichedInspection[]>('/inspections/all');
+        const backendInspections = await this.request<EnrichedInspection[]>('/inspections/all');
       
       // Validate response is an array
       if (!Array.isArray(backendInspections)) {
@@ -714,9 +675,6 @@ class ApiClient {
       ]
     };
 
-    console.log('🚀 SENDING REQUEST:');
-    console.log('URL:', `/api/inspections/${id}/complete`);
-    console.log('Payload:', JSON.stringify(payload, null, 2));
 
     const url = `${ENV.API_BASE_URL}/inspections/${id}/complete`;
     
@@ -730,16 +688,11 @@ class ApiClient {
         body: JSON.stringify(payload)
       });
 
-      console.log('📥 RESPONSE STATUS:', response.status);
-      console.log('📥 RESPONSE HEADERS:', [...response.headers.entries()]);
-
       const responseText = await response.text();
-      console.log('📥 RAW RESPONSE TEXT:', responseText);
 
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log('📥 PARSED RESPONSE:', JSON.stringify(result, null, 2));
       } catch (parseError) {
         console.error('❌ JSON PARSE ERROR:', parseError);
         throw new Error(`Invalid JSON response: ${responseText}`);
@@ -750,13 +703,6 @@ class ApiClient {
         throw new Error(result.message || `HTTP ${response.status}`);
       }
 
-      // Check for savedResponses field
-      if (result.savedResponses !== undefined) {
-        console.log(`✅ SUCCESS: ${result.savedResponses} responses saved`);
-      } else {
-        console.warn('⚠️  WARNING: savedResponses field missing from response');
-        console.log('Available fields:', Object.keys(result));
-      }
 
       return result;
 
@@ -775,7 +721,6 @@ class ApiClient {
   async getDetailedInspection(id: string): Promise<DetailedInspection> {
     // In development, return mock data
     if (isDevelopment()) {
-      console.log(`🔄 Using mock detailed inspection data for ID: ${id}`);
       const basicInspection = mockData.inspections.find(i => i.id === id);
       if (!basicInspection) {
         throw new Error('Inspection not found');
@@ -879,7 +824,6 @@ class ApiClient {
       })
     };
     
-    console.log('✅ Transformed detailed inspection:', transformedInspection);
     return transformedInspection;
   }
 

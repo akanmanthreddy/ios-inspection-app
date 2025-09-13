@@ -132,17 +132,14 @@ function AppContent() {
     // Get photos from form data
     const photosData = inspectionFormData.photos as Record<string, PhotoData[]>;
     if (!photosData || Object.keys(photosData).length === 0) {
-      console.log('📷 No photos to upload');
       return uploadedPhotoUrls;
     }
     
-    console.log(`📤 Starting photo upload for ${Object.keys(photosData).length} items`);
     
     // Upload photos for each item
     for (const [itemId, photos] of Object.entries(photosData)) {
       if (photos && photos.length > 0) {
         try {
-          console.log(`📸 Uploading ${photos.length} photos for item ${itemId}`);
           
           const uploadResults = await PhotoUploadService.uploadPhotos(photos, {
             inspectionId: currentInspectionId,
@@ -151,7 +148,6 @@ function AppContent() {
           });
           
           uploadedPhotoUrls[itemId] = uploadResults.map(result => result.url);
-          console.log(`✅ Uploaded ${uploadResults.length} photos for item ${itemId}`);
         } catch (error) {
           console.error(`❌ Failed to upload photos for item ${itemId}:`, error);
           // Continue with other items even if one fails
@@ -159,13 +155,11 @@ function AppContent() {
       }
     }
     
-    console.log('📤 Photo upload complete. Total items with photos:', Object.keys(uploadedPhotoUrls).length);
     return uploadedPhotoUrls;
   };
 
   const handleFinalizeWithoutSigning = async () => {
     try {
-      console.log('Finalizing inspection without report:', inspectionFormData);
       
       // Save inspection data to database if we have form data and inspection ID
       if (inspectionFormData && currentInspectionId) {
@@ -253,11 +247,6 @@ function AppContent() {
         // Individual item responses are stored separately in itemResponses[].notes
         const inspectionNotes = 'Inspection completed successfully';
         
-        console.log('🔍 Raw inspection form data:', inspectionFormData);
-        console.log('💾 Saving inspection with issues:', issues);
-        console.log('💾 Saving inspection with item responses:', itemResponses);
-        console.log('💾 Photo URLs uploaded:', uploadedPhotoUrls);
-        console.log('💾 Inspection notes:', inspectionNotes);
         
         // Validate item responses before sending
         const validateItemResponses = (responses: CreateInspectionItemResponse[]) => {
@@ -278,13 +267,10 @@ function AppContent() {
         
         // Validate before sending
         validateItemResponses(itemResponses);
-        console.log('✅ Item responses validation passed');
         
         // Complete the inspection in the database with item responses
         const result = await completeInspection(currentInspectionId, issues, inspectionNotes, itemResponses);
-        console.log('✅ Backend completion result:', result);
         
-        console.log('✅ Inspection saved successfully to database');
       }
       
       // Navigate back to the properties page of the community they were in
@@ -325,7 +311,6 @@ function AppContent() {
 
   const handleFinalizeReport = async () => {
     try {
-      console.log('Finalizing report with template:', selectedReportTemplate, inspectionFormData);
       // Navigate back to the properties page of the community they were in
       const communityId = selectedCommunity;
       if (communityId) {
@@ -351,7 +336,6 @@ function AppContent() {
 
   const handleShareReport = async (email: string) => {
     try {
-      console.log('Sharing report to email:', email, 'with template:', selectedReportTemplate);
       // Navigate back to the properties page of the community they were in
       if (selectedCommunity) {
         // Clear inspection-specific state but keep community selection
@@ -376,13 +360,10 @@ function AppContent() {
 
   const handleViewInspection = async (inspectionId: string, propertyAddress: string) => {
     try {
-      console.log('🔍 Fetching detailed inspection data for:', inspectionId);
       // Try to fetch detailed inspection data
       const detailedInspection = await apiClient.getDetailedInspection(inspectionId);
-      console.log('✅ Got detailed inspection data:', detailedInspection);
       setSelectedInspectionForDetail(detailedInspection);
     } catch (error) {
-      console.log('⚠️ Failed to fetch detailed data, creating fallback inspection object:', error);
       // Fallback to basic inspection data if detailed fetch fails
       const fallbackInspection = {
         id: inspectionId,
@@ -529,13 +510,10 @@ function AppContent() {
             onBack={navigateBack}
             onInspectionClick={async (inspection) => {
               try {
-                console.log('🔍 Fetching detailed inspection data for:', inspection.id);
                 // Try to fetch detailed inspection data
                 const detailedInspection = await apiClient.getDetailedInspection(inspection.id);
-                console.log('✅ Got detailed inspection data:', detailedInspection);
-                setSelectedInspectionForDetail(detailedInspection);
+                          setSelectedInspectionForDetail(detailedInspection);
               } catch (error) {
-                console.log('⚠️ Failed to fetch detailed data, using basic data:', error);
                 // Fallback to basic inspection data if detailed fetch fails
                 setSelectedInspectionForDetail(inspection);
               }

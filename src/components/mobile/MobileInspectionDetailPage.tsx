@@ -211,7 +211,6 @@ export function MobileInspectionDetailPage({
                                         className="flex-shrink-0 w-12 h-12 rounded cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border border-slate-200"
                                         onClick={() => {
                                           // TODO: Implement photo viewer
-                                          console.log('View photo:', photo);
                                         }}
                                       >
                                         <img 
