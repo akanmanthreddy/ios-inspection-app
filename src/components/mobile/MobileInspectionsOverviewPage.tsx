@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar, CheckCircle, Clock, AlertTriangle, Search, ArrowLeft, Plus } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -21,7 +21,7 @@ export function MobileInspectionsOverviewPage({
 }: MobileInspectionsOverviewPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending' | 'in-progress'>('all');
-  const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in' | 'annual'>('all');
+  const [filterType, setFilterType] = useState<string>('all');
 
   // Use live API data via the useAllInspections hook
   const { inspections: allInspections, loading, error, refetch } = useAllInspections();
@@ -76,12 +76,29 @@ export function MobileInspectionsOverviewPage({
     }
   };
 
-  const statusCounts = {
+  const statusCounts = useMemo(() => ({
     all: allInspections.length,
     completed: allInspections.filter(i => i.status === 'completed').length,
     'in-progress': allInspections.filter(i => i.status === 'in-progress').length,
     pending: allInspections.filter(i => i.status === 'pending').length
-  };
+  }), [allInspections]);
+
+  // Dynamically generate type filters from inspection data
+  const typeFilters = useMemo(() => {
+    const uniqueTypes = Array.from(
+      new Set(allInspections.map(i => i.type).filter(Boolean))
+    );
+    
+    return [
+      { key: 'all', label: 'All Types' },
+      ...uniqueTypes.map(type => ({
+        key: type,
+        label: type.split('-').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')
+      }))
+    ];
+  }, [allInspections]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -162,19 +179,12 @@ export function MobileInspectionsOverviewPage({
         <div>
           <p className="text-slate-600 text-sm mb-2">Filter by Type</p>
           <div className="flex space-x-2 overflow-x-auto pb-2">
-            {[
-              { key: 'all', label: 'All Types' },
-              { key: 'routine', label: 'Routine' },
-              { key: 'maintenance', label: 'Maintenance' },
-              { key: 'move-in', label: 'Move-in' },
-              { key: 'move-out', label: 'Move-out' },
-              { key: 'annual', label: 'Annual' }
-            ].map((filter) => (
+            {typeFilters.map((filter) => (
               <Button
                 key={filter.key}
                 size="sm"
                 variant={filterType === filter.key ? "default" : "outline"}
-                onClick={() => setFilterType(filter.key as any)}
+                onClick={() => setFilterType(filter.key)}
                 className="whitespace-nowrap"
               >
                 {filter.label}

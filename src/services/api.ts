@@ -65,7 +65,7 @@ export interface Inspection {
   inspectorName: string;
   date: string;
   status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
-  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  type: string;
   issues: InspectionIssue[];
   notes?: string;
   createdAt: string;
@@ -111,7 +111,7 @@ export interface BackendInspectionResponse {
   date?: string; // Some endpoints might return this instead
   completed_at?: string | null;
   status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
-  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  type: string;
   issues?: InspectionIssue[];
   issues_count?: number; // NEW: Backend now includes this in property-filtered endpoints
   notes?: string | null;
@@ -134,7 +134,7 @@ export interface EnrichedInspection {
   inspector_name: string | null;
   scheduled_date: string;
   completed_at: string | null;
-  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  type: string;
   status: 'scheduled' | 'in-progress' | 'completed' | 'requires-follow-up';
   notes: string | null;
   issues_count: number;
@@ -229,7 +229,7 @@ export interface CreateInspectionData {
   propertyId: string;
   inspectorId: string;  // Backend expects inspectorId, not inspectorName
   scheduledDate: string;  // Backend expects full ISO timestamp
-  type: 'routine' | 'move-in' | 'move-out' | 'maintenance';
+  type: string;
   templateId: string | number;  // Backend requires template_id for inspections
 }
 

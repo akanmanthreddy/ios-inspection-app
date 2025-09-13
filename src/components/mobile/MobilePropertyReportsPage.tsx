@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, Calendar, FileText, User, Clock, Check, AlertCircle } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -15,7 +15,7 @@ export function MobilePropertyReportsPage({
   propertyAddress,
   onBack
 }: MobilePropertyReportsPageProps) {
-  const [filterType, setFilterType] = useState<'all' | 'routine' | 'maintenance' | 'move-out' | 'move-in' | 'annual'>('all');
+  const [filterType, setFilterType] = useState<string>('all');
 
   // Mock completed inspection reports - sorted by most recent first
   const allCompletedReports = [
@@ -87,6 +87,20 @@ export function MobilePropertyReportsPage({
     }
   ];
 
+  // Generate dynamic filter options from available report types
+  const availableTypes = useMemo(() => {
+    const uniqueTypes = Array.from(new Set(
+      allCompletedReports.map(r => r.type).filter(type => type != null)
+    ));
+    return [
+      { key: 'all', label: 'All Types' },
+      ...uniqueTypes.map(type => ({ 
+        key: type, 
+        label: type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ')
+      }))
+    ];
+  }, [allCompletedReports]);
+
   // Filter reports by type
   const completedReports = allCompletedReports.filter(report => {
     return filterType === 'all' || report.type === filterType;
@@ -154,14 +168,7 @@ export function MobilePropertyReportsPage({
           <div>
             <p className="text-primary-foreground/80 text-sm mb-2">Filter by Type</p>
             <div className="flex space-x-2 overflow-x-auto pb-2">
-              {[
-                { key: 'all', label: 'All Types' },
-                { key: 'routine', label: 'Routine' },
-                { key: 'maintenance', label: 'Maintenance' },
-                { key: 'move-in', label: 'Move-in' },
-                { key: 'move-out', label: 'Move-out' },
-                { key: 'annual', label: 'Annual' }
-              ].map((filter) => (
+              {availableTypes.map((filter) => (
                 <Button
                   key={filter.key}
                   size="sm"

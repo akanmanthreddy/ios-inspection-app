@@ -424,7 +424,7 @@ function AppContent() {
       
       // Find the selected template to get its type
       const selectedTemplate = templates.find(t => t.id.toString() === templateId.toString());
-      const inspectionType = selectedTemplate?.type || 'routine'; // fallback to 'routine' if template not found
+      const inspectionType = selectedTemplate?.type || 'routine'; // Fallback for templates without type field
       
       const inspectionData: CreateInspectionData = {
         propertyId,
