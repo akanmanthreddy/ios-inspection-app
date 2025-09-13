@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronDown, Check, Star, Wrench, Camera, NotebookPen, ImageIcon } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -197,12 +197,12 @@ export function MobileInspectionFormPage({
 
   const progress = (completedItems / totalItems) * 100;
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [sectionId]: !prev[sectionId]
     }));
-  };
+  }, []);
 
   const updateFormData = (itemId: string, field: string, value: any) => {
     setFormData(prev => ({
@@ -214,22 +214,22 @@ export function MobileInspectionFormPage({
     }));
   };
 
-  const handleStatusChange = (itemId: string, status: 'good' | 'fair' | 'repair') => {
+  const handleStatusChange = useCallback((itemId: string, status: 'good' | 'fair' | 'repair') => {
     updateFormData(itemId, 'status', status);
-  };
+  }, []);
 
-  const handleCommentChange = (itemId: string, comment: string) => {
+  const handleCommentChange = useCallback((itemId: string, comment: string) => {
     updateFormData(itemId, 'comment', comment);
-  };
+  }, []);
 
-  const toggleNotes = (itemId: string) => {
+  const toggleNotes = useCallback((itemId: string) => {
     setExpandedNotes(prev => ({
       ...prev,
       [itemId]: !prev[itemId]
     }));
-  };
+  }, []);
 
-  const handleCameraClick = async (itemId: string) => {
+  const handleCameraClick = useCallback(async (itemId: string) => {
     try {
       console.log('🎯 Camera button clicked for item:', itemId);
       console.log('📱 Using choosePhoto method (will prompt user)');
@@ -285,9 +285,9 @@ export function MobileInspectionFormPage({
       // Clear loading state for this item
       setLoadingCameraForItem(null);
     }
-  };
+  }, [choosePhoto, itemPhotos]);
   
-  const removePhotoFromItem = (itemId: string, photoId: string) => {
+  const removePhotoFromItem = useCallback((itemId: string, photoId: string) => {
     setItemPhotos(prev => {
       const updated = {
         ...prev,
@@ -301,7 +301,7 @@ export function MobileInspectionFormPage({
       
       return updated;
     });
-  };
+  }, []);
 
   // Handle scroll to update sticky section header
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, Home, Calendar, FileText, PlayCircle, Search, X, BarChart3 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -15,7 +15,7 @@ interface MobilePropertiesPageProps {
   onStartInspection: (propertyId: string, address: string) => void;
 }
 
-export function MobilePropertiesPage({
+export const MobilePropertiesPage = React.memo(function MobilePropertiesPage({
   communityId,
   communityName = "Properties",
   onBack,
@@ -259,4 +259,4 @@ export function MobilePropertiesPage({
       <div className="h-8"></div>
     </div>
   );
-}
+});

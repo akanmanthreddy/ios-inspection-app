@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient, Template, CreateTemplateData } from '../services/api';
 
 export interface UseTemplatesReturn {
@@ -16,7 +16,7 @@ export function useTemplates(): UseTemplatesReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -30,7 +30,7 @@ export function useTemplates(): UseTemplatesReturn {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const createTemplate = async (data: CreateTemplateData): Promise<Template> => {
     try {
@@ -80,7 +80,7 @@ export function useTemplates(): UseTemplatesReturn {
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+  }, [fetchTemplates]);
 
   return {
     templates,
@@ -106,7 +106,7 @@ export function useTemplate(id: string | number): UseTemplateReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTemplate = async () => {
+  const fetchTemplate = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -119,13 +119,13 @@ export function useTemplate(id: string | number): UseTemplateReturn {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       fetchTemplate();
     }
-  }, [id]);
+  }, [id, fetchTemplate]);
 
   return {
     template,

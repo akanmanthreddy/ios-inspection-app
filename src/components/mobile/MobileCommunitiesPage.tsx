@@ -1,3 +1,4 @@
+import React from 'react';
 import { ChevronLeft, MapPin, Users } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -9,7 +10,7 @@ interface MobileCommunitiesPageProps {
   onSelectCommunity: (communityId: string) => void;
 }
 
-export function MobileCommunitiesPage({
+export const MobileCommunitiesPage = React.memo(function MobileCommunitiesPage({
   onBack,
   onSelectCommunity
 }: MobileCommunitiesPageProps) {
@@ -131,4 +132,4 @@ export function MobileCommunitiesPage({
       <div className="h-8"></div>
     </div>
   );
-}
+});

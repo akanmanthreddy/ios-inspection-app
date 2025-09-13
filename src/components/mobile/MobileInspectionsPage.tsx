@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, Calendar, User, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -15,7 +15,7 @@ interface MobileInspectionsPageProps {
   onInspectionClick?: (inspection: Inspection) => void;
 }
 
-export function MobileInspectionsPage({
+export const MobileInspectionsPage = React.memo(function MobileInspectionsPage({
   propertyId,
   propertyAddress,
   inspections,
@@ -272,4 +272,4 @@ export function MobileInspectionsPage({
       <div className="h-8"></div>
     </div>
   );
-}
+});
