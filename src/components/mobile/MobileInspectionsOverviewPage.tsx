@@ -7,6 +7,7 @@ import { Input } from '../ui/input';
 import { useAllInspections } from '../../hooks/useAllInspections';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { ErrorMessage } from '../ErrorMessage';
+import { formatInspectorName } from '../../utils/displayFormatters';
 
 interface MobileInspectionsOverviewPageProps {
   onViewInspection: (inspectionId: string, propertyAddress: string) => void;
@@ -259,7 +260,7 @@ export function MobileInspectionsOverviewPage({
                       year: 'numeric'
                     })}
                   </div>
-                  <div>Inspector: {inspection.inspector}</div>
+                  <div>Inspector: {formatInspectorName(inspection.inspector)}</div>
                 </div>
               </Card>
             ))}

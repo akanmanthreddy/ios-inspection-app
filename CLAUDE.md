@@ -9,6 +9,15 @@
 
 ## Recent Major Updates
 
+### Session 12: Unit Turns Integration Planning ⚠️
+**Date:** 2025-09-15
+- Analyzed web-based unit turns module from GitHub repository
+- Created comprehensive integration plan with QC enforcer review
+- **QC Status: FAIL** - Critical gaps identified requiring technical specification
+- Created detailed technical specification addressing all QC concerns
+- Established 4-week phased implementation plan with security-first approach
+- **Status**: Ready for Phase 1 implementation after technical specification completion
+
 ### Session 11: Debug Log Cleanup & Critical Bug Fixes ✅
 **Date:** 2025-09-13
 - Cleaned up verbose debug logging while preserving essential error handling
@@ -121,13 +130,24 @@ src/
 
 ---
 
-## Next Recommended Steps
+## Current Priority: Unit Turns Integration
 
+### 🎯 Active Project: Unit Turns Module Integration
+**Documents**:
+- `UNIT_TURNS_INTEGRATION_PLAN.md` - Main project plan
+- `UNIT_TURNS_TECHNICAL_SPECIFICATION.md` - Complete technical spec
+
+**Next Session Priorities**:
+1. **Begin Phase 1**: Infrastructure foundation (security, state management, types)
+2. **File Structure**: Create module organization in `src/modules/unit-turns/`
+3. **Authentication**: Implement role-based permission system
+4. **State Management**: Create UnitTurnContext with comprehensive state handling
+
+### Future Enhancements (Post Unit Turns)
 1. **Enhanced Features** - Photo cloud storage, automated reporting
-2. **Authentication** - User login and role-based access control  
-3. **Performance** - Bundle optimization and code splitting
-4. **Accessibility** - ARIA labels and keyboard navigation
-5. **PWA** - Service worker and offline capabilities
+2. **Performance** - Bundle optimization and code splitting
+3. **Accessibility** - ARIA labels and keyboard navigation
+4. **PWA** - Service worker and offline capabilities
 
 ---
 
