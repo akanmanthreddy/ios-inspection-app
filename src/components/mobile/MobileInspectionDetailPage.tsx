@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Inspection, DetailedInspection } from '../../services/api';
 import { UnifiedInspectionCard } from './UnifiedInspectionCard';
+import { formatInspectorName } from '../../utils/displayFormatters';
 
 interface MobileInspectionDetailPageProps {
   inspection: Inspection | DetailedInspection;
@@ -99,7 +100,7 @@ export function MobileInspectionDetailPage({
               <div className="text-sm text-slate-600 font-medium">Inspector</div>
               <div className="flex items-center mt-1">
                 <User className="w-4 h-4 mr-2 text-slate-500" />
-                <span className="text-sm font-medium">{inspection.inspectorName}</span>
+                <span className="text-sm font-medium">{formatInspectorName(inspection.inspectorName)}</span>
               </div>
             </div>
             <div className="text-center">

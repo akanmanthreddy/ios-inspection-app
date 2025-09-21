@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
+import { UnitTurnProvider } from './modules/unit-turns/contexts/UnitTurnContext';
 import { MobileLandingPage } from './components/mobile/MobileLandingPage';
 import { MobileCommunitiesPage } from './components/mobile/MobileCommunitiesPage';
 import { MobilePropertiesPage } from './components/mobile/MobilePropertiesPage';
@@ -13,6 +14,9 @@ import { MobilePropertyReportsPage } from './components/mobile/MobilePropertyRep
 import { MobileInspectionsOverviewPage } from './components/mobile/MobileInspectionsOverviewPage';
 import { MobileStartInspectionPage } from './components/mobile/MobileStartInspectionPage';
 import { MobileBottomNav } from './components/mobile/MobileBottomNav';
+import { MobileBottomNavV2 } from './components/mobile/MobileBottomNavV2';
+import { ActionSelectionModal } from './components/mobile/ActionSelectionModal';
+import { MobileUnitTurnLandingPage } from './modules/unit-turns/components/mobile/MobileUnitTurnLandingPage';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Toaster } from './components/ui/sonner';
@@ -24,7 +28,7 @@ import { CreateInspectionData, CreateInspectionItemResponse, apiClient } from '.
 import { PhotoUploadService } from './services/photoUpload';
 import { PhotoData } from './types';
 
-type AppState = 'landing' | 'communities' | 'properties' | 'inspections' | 'inspection-detail' | 'inspections-overview' | 'inspection-form' | 'completion-options' | 'template-selection' | 'report-preview' | 'property-reports' | 'start-inspection';
+type AppState = 'landing' | 'communities' | 'properties' | 'inspections' | 'inspection-detail' | 'inspections-overview' | 'inspection-form' | 'completion-options' | 'template-selection' | 'report-preview' | 'property-reports' | 'start-inspection' | 'unit-turns';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<AppState>('landing');
@@ -38,6 +42,8 @@ function AppContent() {
   const [selectedInspectionTemplate, setSelectedInspectionTemplate] = useState<string | number | null>(null);
   const [selectedInspectionForDetail, setSelectedInspectionForDetail] = useState<any>(null);
   const [navigationStack, setNavigationStack] = useState<AppState[]>(['landing']);
+  const [useNewNavigation, setUseNewNavigation] = useState<boolean>(true); // Toggle for testing
+  const [actionModalOpen, setActionModalOpen] = useState<boolean>(false);
 
   // API Integration Hooks - always call hooks (rules of hooks)
   const { 
@@ -443,6 +449,51 @@ function AppContent() {
     setNavigationStack(['landing', 'inspections-overview']);
   };
 
+  const handleBottomNavUnitTurns = () => {
+    // Navigate to unit turns from bottom nav
+    setCurrentPage('unit-turns');
+    setNavigationStack(['landing', 'unit-turns']);
+  };
+
+  const handleBottomNavLanding = () => {
+    // Navigate to landing page from bottom nav
+    setCurrentPage('landing');
+    setNavigationStack(['landing']);
+    // Clear selections when going to landing
+    setSelectedCommunity(null);
+    setSelectedProperty(null);
+    setSelectedPropertyForReports(null);
+    setCurrentInspectionId(null);
+    setSelectedCommunityForInspection(null);
+  };
+
+  const handleSearch = () => {
+    // Placeholder for future search implementation
+    console.log('Search clicked - feature not implemented yet');
+  };
+
+  const handleSettings = () => {
+    // Placeholder for future settings implementation
+    console.log('Settings clicked - feature not implemented yet');
+  };
+
+  const handleCenterButtonClick = () => {
+    // Open action selection modal
+    setActionModalOpen(true);
+  };
+
+  const handleStartInspectionFromModal = () => {
+    // Navigate to start inspection page (existing functionality)
+    setCurrentPage('start-inspection');
+    setNavigationStack([...navigationStack, 'start-inspection']);
+  };
+
+  const handleStartUnitTurnFromModal = () => {
+    // Navigate to unit turns page (existing functionality)
+    setCurrentPage('unit-turns');
+    setNavigationStack([...navigationStack, 'unit-turns']);
+  };
+
   // Loading and error states - only show loading for active page
   const showLoading = (currentPage === 'communities' && communitiesLoading) ||
                      (currentPage === 'properties' && propertiesLoading) ||
@@ -601,6 +652,13 @@ function AppContent() {
           />
         );
 
+      case 'unit-turns':
+        return (
+          <MobileUnitTurnLandingPage
+            onBack={navigateBack}
+          />
+        );
+
       case 'property-reports':
         return selectedPropertyForReports ? (
           <MobilePropertyReportsPage 
@@ -624,17 +682,37 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-start justify-center">
-      <div className="w-full max-w-sm bg-background min-h-screen shadow-xl">
+      <div className={`w-full max-w-sm bg-background min-h-screen shadow-xl ${
+        shouldShowBottomNav && useNewNavigation ? 'pb-32' : ''
+      }`}>
         {renderCurrentPage()}
-        {shouldShowBottomNav && (
+        {shouldShowBottomNav && !useNewNavigation && (
           <MobileBottomNav
             currentPage={currentPage}
             onNavigateToCommunities={handleBottomNavCommunities}
             onNavigateToInspections={handleBottomNavInspections}
+            onNavigateToUnitTurns={handleBottomNavUnitTurns}
           />
         )}
         <Toaster />
       </div>
+      {/* New navigation renders outside the main container */}
+      {shouldShowBottomNav && useNewNavigation && (
+        <MobileBottomNavV2
+          currentPage={currentPage}
+          onNavigateToLanding={handleBottomNavLanding}
+          onCenterButtonClick={handleCenterButtonClick}
+          onSettings={handleSettings}
+        />
+      )}
+
+      {/* Action Selection Modal */}
+      <ActionSelectionModal
+        isOpen={actionModalOpen}
+        onClose={() => setActionModalOpen(false)}
+        onStartInspection={handleStartInspectionFromModal}
+        onStartUnitTurn={handleStartUnitTurnFromModal}
+      />
     </div>
   );
 }
@@ -642,7 +720,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <UnitTurnProvider>
+        <AppContent />
+      </UnitTurnProvider>
     </AuthProvider>
   );
 }

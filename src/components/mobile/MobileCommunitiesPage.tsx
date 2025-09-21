@@ -95,7 +95,10 @@ export const MobileCommunitiesPage = React.memo(function MobileCommunitiesPage({
                   <h3 className="font-medium text-lg mb-1">{community.name}</h3>
                   <div className="flex items-center text-muted-foreground text-sm mb-2">
                     <MapPin className="w-4 h-4 mr-1" />
-                    {community.location}
+                    {community.city && community.state ?
+                      `${community.city}, ${community.state}${community.zip ? ' ' + community.zip : ''}` :
+                      community.location
+                    }
                   </div>
                 </div>
                 <Badge className={getStatusColor(community.status)}>

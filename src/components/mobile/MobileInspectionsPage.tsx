@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Inspection } from '../../services/api';
+import { formatInspectorName } from '../../utils/displayFormatters';
 
 interface MobileInspectionsPageProps {
   propertyId: string;
@@ -230,8 +231,8 @@ export const MobileInspectionsPage = React.memo(function MobileInspectionsPage({
                       <div className="font-medium text-sm">
                         {getTypeLabel(inspection.type)} Inspection
                       </div>
-                      <div className="flex items-center text-xs text-slate-600 mt-1">
-                        <Calendar className="w-3 h-3 mr-1" />
+                      <div className="flex items-center text-sm text-slate-600 mt-1">
+                        <Calendar className="w-4 h-4 mr-1" />
                         {inspection.date ? new Date(inspection.date).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -241,14 +242,11 @@ export const MobileInspectionsPage = React.memo(function MobileInspectionsPage({
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
-                    <Badge className={getStatusColor(inspection.status)}>
-                      {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1).replace('-', ' ')}
-                    </Badge>
                     {inspection.status === 'completed' && (
-                      <div className="mt-2 text-sm">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full ${
-                          (inspection.issues?.length || 0) > 0 
-                            ? 'bg-red-100 text-red-800' 
+                      <div className="text-sm">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm ${
+                          (inspection.issues?.length || 0) > 0
+                            ? 'bg-red-100 text-red-800'
                             : 'bg-green-100 text-green-800'
                         }`}>
                           {inspection.issues?.length || 0} Repair Item{(inspection.issues?.length || 0) !== 1 ? 's' : ''}
@@ -258,9 +256,14 @@ export const MobileInspectionsPage = React.memo(function MobileInspectionsPage({
                   </div>
                 </div>
 
-                <div className="flex items-center text-sm text-slate-600">
-                  <User className="w-4 h-4 mr-1" />
-                  {inspection.inspectorName}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-sm text-slate-600">
+                    <User className="w-4 h-4 mr-1" />
+                    {formatInspectorName(inspection.inspectorName)}
+                  </div>
+                  <Badge className={getStatusColor(inspection.status)}>
+                    {inspection.status.charAt(0).toUpperCase() + inspection.status.slice(1).replace('-', ' ')}
+                  </Badge>
                 </div>
               </Card>
             ))}
