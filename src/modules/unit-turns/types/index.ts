@@ -105,21 +105,24 @@ export const GL_CLASSIFICATION_LABELS: Record<'UT' | 'R&M' | 'Cap Ex', string> =
 };
 
 // Utility functions for data transformation
-export const transformBackendUnitTurnInstance = (backend: UnitTurnInstanceBackend): UnitTurnInstance => ({
-  id: backend.id,
-  propertyId: backend.property_id,
-  communityId: backend.community_id,
-  templateName: backend.template_name,
-  totalProjectCost: backend.total_project_cost,
-  totalDamageCharges: backend.total_damage_charges,
-  status: backend.status,
-  createdBy: backend.created_by,
-  savedAt: backend.saved_at,
-  lastModifiedAt: backend.last_modified_at,
-  exportedAt: backend.exported_at,
-  notes: backend.notes,
-  version: backend.version
-});
+export const transformBackendUnitTurnInstance = (backend: UnitTurnInstanceBackend): UnitTurnInstance => {
+
+  return {
+    id: backend.id,
+    propertyId: backend.property_id,
+    communityId: backend.community_id,
+    templateName: backend.template_name,
+    totalProjectCost: backend.total_project_cost,
+    totalDamageCharges: backend.total_damage_charges,
+    status: backend.status,
+    createdBy: backend.created_by,
+    savedAt: backend.saved_at,
+    lastModifiedAt: backend.last_modified_at,
+    exportedAt: backend.exported_at,
+    notes: backend.notes,
+    version: backend.version
+  };
+};
 
 export const transformBackendUnitTurnLineItem = (backend: UnitTurnLineItemBackend): UnitTurnLineItem => ({
   id: backend.id,

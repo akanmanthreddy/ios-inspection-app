@@ -115,6 +115,9 @@ export interface UnitTurnPhotoUploadResult {
   file_path: string;
   entity_type: 'unit_turn_instance' | 'unit_turn_line_item';
   entity_id: string;
+  url: string;
+  filename: string;
+  created_at: string;
 }
 
 export type UnitTurnPhotoUploadResponse = ApiResponse<UnitTurnPhotoUploadResult>;

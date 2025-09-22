@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 
 interface ActionSelectionModalProps {
@@ -19,8 +19,10 @@ export function ActionSelectionModal({
       <DialogContent className="w-full max-w-xs mx-auto bg-background/95 backdrop-blur-sm border border-border/20 shadow-xl">
         {/* Header */}
         <div className="space-y-3 text-center">
-          <h2 className="text-lg font-semibold">Choose Your Action</h2>
-          <p className="text-sm text-muted-foreground">Select one of the options below to proceed:</p>
+          <DialogTitle className="text-lg font-semibold">Choose Your Action</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Select one of the options below to proceed:
+          </DialogDescription>
         </div>
 
         {/* Action buttons */}

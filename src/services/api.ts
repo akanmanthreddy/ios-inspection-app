@@ -30,6 +30,9 @@ export interface Community {
   name: string;
   status: 'active' | 'under-construction' | 'sold';
   location: string;
+  city?: string;        // City field from backend
+  state?: string;       // State field from backend
+  zip?: string;         // ZIP code field from backend
   total_units: number;  // Backend uses snake_case
   description?: string | null;
   created_at: string;   // Backend uses snake_case
@@ -923,6 +926,19 @@ class ApiClient {
 
   async generateCommunityReport(communityId: string, format: 'pdf' | 'excel' = 'pdf'): Promise<{ url: string }> {
     return this.request<{ url: string }>(`/reports/community/${communityId}?format=${format}`);
+  }
+
+  // Unit Turn API Integration - Basic endpoints for main API client
+  async getUnitTurns(propertyId?: string): Promise<any[]> {
+    const query = propertyId ? `?property_id=${propertyId}` : '';
+    return this.request<any[]>(`/unit-turn-instances${query}`);
+  }
+
+  async createUnitTurn(data: any): Promise<any> {
+    return this.request<any>('/unit-turn-instances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 }
 
